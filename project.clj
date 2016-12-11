@@ -19,10 +19,10 @@
 
   :figwheel {:css-dirs ["resources/public/css"]}
 
-  :garden {:builds [{:id           "screen"
+  :garden {:builds [{:id           "app"
                      :source-paths ["src/clj"]
-                     :stylesheet   monzo-cljs.css/screen
-                     :compiler     {:output-to     "resources/public/css/screen.css"
+                     :stylesheet   monzo-cljs.css/app
+                     :compiler     {:output-to     "resources/public/css/app.css"
                                     :pretty-print? true}}]}
 
   

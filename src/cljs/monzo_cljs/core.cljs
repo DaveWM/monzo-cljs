@@ -2,7 +2,8 @@
   (:require
    [reagent.core :as reagent]
    [posh.reagent :refer [pull q posh! transact!]]
-   [datascript.core :as d]))
+   [datascript.core :as d]
+   [monzo-cljs.home-page :refer [home-page]]))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -21,20 +22,10 @@
 ;; Posh
 
 (def conn (d/create-conn))
-(def app-datom-id 1)
 
 (posh! conn)
 
-(transact! conn [[:db/add app-datom-id :app/title "Monzo Web"]])
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Page
-
-(defn page [conn]
-  (let [{title :app/title} @(pull conn '[:app/title] app-datom-id)]
-    [:p title]))
-
+(transact! conn [[:db/add 1 :app/title "Monzo Web"]])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Initialize App
@@ -46,7 +37,7 @@
     ))
 
 (defn reload []
-  (reagent/render [page conn]
+  (reagent/render [home-page conn]
                   (.getElementById js/document "app")))
 
 (defn ^:export main []
