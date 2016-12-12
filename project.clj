@@ -37,8 +37,7 @@
                    [org.clojure/tools.namespace "0.2.11"]]
 
     :plugins      [[lein-figwheel "0.5.8"]
-                   [lein-doo "0.1.7"]
-                   [cider/cider-nrepl "0.13.0"]]
+                   [lein-doo "0.1.7"]]
     }}
 
   :cljsbuild
