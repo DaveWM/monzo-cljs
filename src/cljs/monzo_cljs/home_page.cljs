@@ -1,5 +1,6 @@
 (ns monzo-cljs.home-page
-  (:require [posh.reagent :refer [pull]]))
+  (:require [posh.reagent :refer [pull]]
+            [monzo-cljs.db :refer [app-datom-id]]))
 
 (defn header [title]
   [:header {:class "mdl-layout__header"}
@@ -12,7 +13,7 @@
    [:p (apply str (repeat 25 "Content"))]])
 
 (defn home-page [conn]
-  (let [{title :app/title} @(pull conn '[:app/title] 1)]
+  (let [{title :app/title} @(pull conn '[:app/title] app-datom-id)]
     [:div {:class "mdl-layout mdl-layout--fixed-header"}
      (header title)
      (content)]))

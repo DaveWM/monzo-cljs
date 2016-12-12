@@ -1,9 +1,8 @@
 (ns monzo-cljs.core
   (:require
    [reagent.core :as reagent]
-   [posh.reagent :refer [pull q posh! transact!]]
-   [datascript.core :as d]
-   [monzo-cljs.home-page :refer [home-page]]))
+   [monzo-cljs.home-page :refer [home-page]]
+   [monzo-cljs.db :refer [app-db]]))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -11,21 +10,6 @@
 
 (defonce debug?
   ^boolean js/goog.DEBUG)
-
-(defonce app-state
-  (reagent/atom
-   {:text "Hello, what is your name? "}))
-
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Posh
-
-(def conn (d/create-conn))
-
-(posh! conn)
-
-(transact! conn [[:db/add 1 :app/title "Monzo Web"]])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Initialize App
@@ -37,7 +21,7 @@
     ))
 
 (defn reload []
-  (reagent/render [home-page conn]
+  (reagent/render [home-page app-db]
                   (.getElementById js/document "app")))
 
 (defn ^:export main []
