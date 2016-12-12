@@ -3,6 +3,7 @@
                  [org.clojure/clojurescript "1.9.229"]
                  [reagent "0.6.0"]
                  [garden "1.3.2"]
+                 [ns-tracker "0.3.0"]
                  [posh "0.5.5"]] 
 
   :min-lein-version "2.5.3"
