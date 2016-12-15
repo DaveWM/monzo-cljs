@@ -4,7 +4,11 @@
                  [reagent "0.6.0"]
                  [garden "1.3.2"]
                  [ns-tracker "0.3.0"]
-                 [posh "0.5.5"]] 
+                 [posh "0.5.5"]
+                 [com.cemerick/url "0.1.1"]
+                 [cljs-http "0.1.42"]
+                 [com.domkm/silk "0.1.2"]
+                 [kibu/pushy "0.3.6"]] 
 
   :min-lein-version "2.5.3"
 
@@ -23,7 +27,7 @@
   :garden {:builds [{:id           "app"
                      :source-paths ["src/clj"]
                      :stylesheet   monzo-cljs.css/app
-                     :compiler     {:output-to     "resources/public/css/app.css"
+                     :compiler     {:output-to "resources/public/css/app.css"
                                     :pretty-print? true}}]}
 
   
