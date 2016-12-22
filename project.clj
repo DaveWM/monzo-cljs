@@ -8,7 +8,8 @@
                  [com.cemerick/url "0.1.1"]
                  [cljs-http "0.1.42"]
                  [com.domkm/silk "0.1.2"]
-                 [kibu/pushy "0.3.6"]] 
+                 [kibu/pushy "0.3.6"]
+                 [com.andrewmcveigh/cljs-time "0.5.0-alpha2"]] 
 
   :min-lein-version "2.5.3"
 

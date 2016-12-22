@@ -1,8 +1,9 @@
 (ns monzo-cljs.core
   (:require
    [reagent.core :as reagent]
-   [monzo-cljs.home-page :refer [home-page]]
+   [monzo-cljs.root-component :refer [root-component]]
    [monzo-cljs.db :refer [get-app-db app-datom-id]]
+   [posh.reagent :refer [pull]]
    [cemerick.url :refer [url]]
    [monzo-cljs.routing :refer [start-router!]]
    [monzo-cljs.events :refer [start-event-loop]]
@@ -37,7 +38,7 @@
                    :local-storage js/localStorage})
 
 (defn reload []
-  (reagent/render [home-page app-db]
+  (reagent/render [root-component app-db]
                   (.getElementById js/document "app")))
 
 (defn main []

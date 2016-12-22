@@ -7,7 +7,7 @@
 (def oauth-route ["oauth"])
 
 (def routes
-  (silk/routes [[:routes/root [[]]]
+  (silk/routes [[:routes/home [[]]]
                 [:routes/oauth [oauth-route {"code" :code}]]]))
 
 (defn get-route-url [route-name]
