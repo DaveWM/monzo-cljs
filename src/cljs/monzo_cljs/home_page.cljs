@@ -1,5 +1,5 @@
 (ns monzo-cljs.home-page
-  (:require [posh.reagent :refer [pull q]]
+  (:require [datascript.core :refer [pull q]]
             [monzo-cljs.db :refer [app-datom-id]]
             [monzo-cljs.currencies :refer [currencies]]
             [goog.string :as gstring]
@@ -7,7 +7,8 @@
             [cljs-time.coerce :as coerce-time]
             [cljs-time.core :as time :refer [year month day]]
             [cljs-time.format :as time-format]
-            [clojure.string :refer [blank?]]))
+            [clojure.string :refer [blank?]]
+            [datascript.core :as d]))
 
 (defn format-amount [currency amount]
   (let [symbol (-> (keyword currency)
@@ -41,7 +42,7 @@
       (first currencies))))
 
 (defn home-page [app-db]
-  (let [data (->> @(q '[:find ?e ?created ?amount ?desc ?currency ?m
+  (let [data (->> (q '[:find ?e ?created ?amount ?desc ?currency ?m
                         :in $
                         :where
                         [?e :transaction/description ?desc]
@@ -54,7 +55,7 @@
                          (let [m-id (last transaction)]
                            {:transaction transaction
                             :merchant (when m-id
-                                        (-> @(pull app-db '[:merchant/emoji :merchant/logo :merchant/name :merchant/address]
+                                        (-> (d/pull app-db '[:merchant/emoji :merchant/logo :merchant/name :merchant/address]
                                                    m-id)
                                             ((juxt :merchant/emoji :merchant/logo :merchant/name :merchant/address))))}))))]
     (if (empty? data)

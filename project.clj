@@ -1,10 +1,10 @@
 (defproject monzo-cljs "0.1.0-SNAPSHOT"
   :dependencies [[org.clojure/clojure "1.8.0"]
                  [org.clojure/clojurescript "1.9.229"]
+                 [datascript "0.15.5"]
                  [reagent "0.6.0"]
                  [garden "1.3.2"]
                  [ns-tracker "0.3.0"]
-                 [posh "0.5.5"]
                  [com.cemerick/url "0.1.1"]
                  [cljs-http "0.1.42"]
                  [com.domkm/silk "0.1.2"]

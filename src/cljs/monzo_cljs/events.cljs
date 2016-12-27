@@ -2,11 +2,11 @@
   (:require [cljs.core.async :refer [chan <! put! pipeline pipe merge to-chan]]
             [monzo-cljs.auth :refer [oauth-url check-token-valid exchange-auth-code]]
             [monzo-cljs.routing :refer [get-route-url]]
-            [posh.reagent :refer [transact!]]
             [datascript.core :as d]
             [monzo-cljs.db :refer [app-datom-id]]
             [monzo-cljs.api :refer [get-accounts get-transactions]]
-            [cljs-time.coerce :as time])
+            [cljs-time.format :refer [formatter parse]]
+            [clojure.string :refer [split]])
   (:require-macros [cljs.core.async.macros :refer [go-loop]]))
 
 (defn transduce-chan [from transducer]
@@ -27,9 +27,12 @@
               [:db/add id k v]))))
 
 (defn convert-date-keys [keys m]
-  (reduce (fn [result k]
-            (update result k time/from-string))
-          m keys))
+  (let [format (formatter "yyyy-MM-dd'T'HH:mm:ss")]
+    (reduce (fn [result k]
+              (update result k (comp (partial parse format)
+                                     first
+                                     #(split % #"[Z\.]"))))
+            m keys)))
 
 (defmulti process-event first)
 (defmethod process-event :default [] nil)
@@ -97,7 +100,7 @@
                               (assoc t :transaction/account-id account-id)
                               (assoc t :transaction/merchant-id merchant-id)
                               (dissoc t :merchant)
-                              (convert-date-keys [:created :settled] t)
+                              (convert-date-keys [:created] t)
                               (namespace-keys "transaction" t)
                               (map-to-update db-id t))
                             (->> (:merchant transaction)
@@ -108,11 +111,10 @@
 (defn start-event-loop [event-chan app-db dependencies]
   (go-loop []
     (let [event (<! event-chan)
-          current-db @app-db
-          [db-update command] (process-event event current-db)]
+          [db-update command] (process-event event @app-db)]
       (println "event: " event)
-      (when-let [command-chan (and command (command app-db dependencies))]
+      (when-let [command-chan (and command (command @app-db dependencies))]
         (pipe command-chan event-chan false))
       (when db-update
-        (transact! app-db db-update))
+        (d/transact! app-db db-update))
       (recur))))

@@ -1,7 +1,7 @@
 (ns monzo-cljs.root-component
   (:require [monzo-cljs.db :refer [app-datom-id]]
             [monzo-cljs.home-page :refer [home-page]]
-            [posh.reagent :refer [pull]]))
+            [datascript.core :refer [pull]]))
 
 (def route-component-map {:routes/home home-page
                           :routes/oauth #(vec [:span "Authenticating..."])})
@@ -14,7 +14,7 @@
 
 (defn root-component [conn]
   (let [{title :app/title route :routes/current}
-        @(pull conn '[:app/title :routes/current] app-datom-id)
+        (pull conn '[:app/title :routes/current] app-datom-id)
         page (get route-component-map route)]
     [:div {:class "mdl-layout mdl-layout--fixed-header"}
      (header title)

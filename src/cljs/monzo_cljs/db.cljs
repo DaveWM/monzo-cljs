@@ -1,6 +1,5 @@
 (ns monzo-cljs.db
-  (:require [posh.reagent :refer [pull q posh! transact!]]
-            [datascript.core :as d]
+  (:require [datascript.core :as d]
             [cemerick.url :refer [url]]))
 
 (def app-datom-id 1)
@@ -21,11 +20,10 @@
 
 (defn get-app-db []
   (let [app-db (d/create-conn)]
-    (posh! app-db)
     
-    (transact! app-db [[:db/add app-datom-id :app/title "Monzo Web"]])
+    (d/transact! app-db [[:db/add app-datom-id :app/title "Monzo Web"]])
     
-    (transact! app-db (->> (get-local-storage)
+    (d/transact! app-db (->> (get-local-storage)
                            (map (fn [[ls-key ls-value]]
                                   [:db/add app-datom-id (keyword "ls" ls-key) ls-value]))))
 
