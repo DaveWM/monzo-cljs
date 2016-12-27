@@ -11,7 +11,8 @@
                     :font-weight "800"})
 
 (defstyles app
-  [:body
+  [:body {:height "100%"
+          :background-color "#F5F5F5"}
    [:header.app-bar {:position "relative"
                      :background-color monzo-blue}
     [:.app-bar__logo {:position "absolute"
@@ -21,8 +22,7 @@
    [:main.layout {:height "100%"
                   :justify-content "center"
                   :display "flex"
-                  :padding-top "15px"
-                  :background-color "#F5F5F5"}]
+                  :padding-top "15px"}]
    [:.home-card {:width "100%"
                  :max-width "1200px"}
     [:.home-card__title {:height "100px"
