@@ -5,7 +5,8 @@
             [posh.reagent :refer [transact!]]
             [datascript.core :as d]
             [monzo-cljs.db :refer [app-datom-id]]
-            [monzo-cljs.api :refer [get-accounts get-transactions]])
+            [monzo-cljs.api :refer [get-accounts get-transactions]]
+            [cljs-time.coerce :as time])
   (:require-macros [cljs.core.async.macros :refer [go-loop]]))
 
 (defn transduce-chan [from transducer]
@@ -18,6 +19,17 @@
        (map (fn [[k v]]
                 [(keyword namespace (name k)) v]))
        (into {})))
+
+(defn map-to-update [id m]
+  (->> m
+       (filter second)
+       (map (fn [[k v]]
+              [:db/add id k v]))))
+
+(defn convert-date-keys [keys m]
+  (reduce (fn [result k]
+            (update result k time/from-string))
+          m keys))
 
 (defmulti process-event first)
 (defmethod process-event :default [] nil)
@@ -54,7 +66,7 @@
      (chan))])
 
 (defn monzo-id-to-int [monzo-id]
-  (hash monzo-id))
+  (js/Math.abs (hash monzo-id)))
 
 (defmethod process-event :api/accounts-retrieved [[_ accounts] db]
   [(->> accounts
@@ -77,12 +89,20 @@
 (defmethod process-event :api/transactions-retrieved [[_ transactions account-id] db]
   [(->> transactions
         (mapcat (fn [{:keys [id] :as transaction}]
-                  (let [db-id (monzo-id-to-int id)]
-                    (->> (assoc transaction :transaction/account-id account-id)
-                         (namespace-keys "transaction")
-                         (filter second)
-                         (map (fn [[k v]]
-                                [:db/add db-id k v])))))))])
+                  (let [db-id (monzo-id-to-int id)
+                        merchant-id (-> transaction
+                                        (get-in [:merchant :id])
+                                        monzo-id-to-int)]
+                    (concat (as-> transaction t
+                              (assoc t :transaction/account-id account-id)
+                              (assoc t :transaction/merchant-id merchant-id)
+                              (dissoc t :merchant)
+                              (convert-date-keys [:created :settled] t)
+                              (namespace-keys "transaction" t)
+                              (map-to-update db-id t))
+                            (->> (:merchant transaction)
+                                 (namespace-keys "merchant")
+                                 (map-to-update merchant-id)))))))])
 
 
 (defn start-event-loop [event-chan app-db dependencies]
