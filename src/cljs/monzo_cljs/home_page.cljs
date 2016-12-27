@@ -60,7 +60,7 @@
                                             ((juxt :merchant/emoji :merchant/logo :merchant/name :merchant/address))))}))))]
     (if (empty? data)
       
-      [:div {:class "mdl-spinner is-active"}]
+      [:div {:class "mdl-spinner mdl-js-spinner is-active"}]
       
       [:div {:class "home-card mdl-card mdl-shadow--2dp"}
        [:div {:class "home-card__title mdl-card__title"}
