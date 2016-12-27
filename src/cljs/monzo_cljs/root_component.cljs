@@ -7,10 +7,10 @@
                           :routes/oauth #(vec [:span "Authenticating..."])})
 
 (defn header [title]
-  [:header {:class "mdl-layout__header"}
+  [:header {:class "mdl-layout__header app-bar"}
    [:div {:class "mdl-layout__header-row"}
-    [:img {:src "images/monzo-logo.png" :class "header__logo"}]
-    [:span {:class "mdl-layout-title"} title]]])
+    [:img {:src "images/monzo-logo.png" :class "app-bar__logo"}]
+    [:span {:class "mdl-layout-title app-bar__title"} title]]])
 
 (defn root-component [conn]
   (let [{title :app/title route :routes/current}

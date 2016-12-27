@@ -6,12 +6,18 @@
 (def credit-colour "#8BC34A")
 (def monzo-blue "#14233c")
 
+(def header-styles {:color "white"
+                    :font-family "'Karla', sans-serif"
+                    :font-weight "800"})
+
 (defstyles app
   [:body
-   [:header {:position "relative"}
-    [:.header__logo {:position "absolute"
+   [:header.app-bar {:position "relative"
+                     :background-color monzo-blue}
+    [:.app-bar__logo {:position "absolute"
                      :left "8px"
-                     :height "90%"}]]
+                      :height "90%"}]
+    [:.app-bar__title header-styles]]
    [:main.layout {:height "100%"
                   :justify-content "center"
                   :display "flex"
@@ -20,10 +26,8 @@
    [:.home-card {:width "100%"
                  :max-width "1200px"}
     [:.home-card__title {:height "100px"
-                         :color "white"
                          :background-color monzo-blue}
-     [:h2 {:font-family "'Karla', sans-serif"
-           :font-weight "800"}]]]
+     [:h2 header-styles]]]
    [:.group
     [:.group__header {:margin-bottom "3px"}]
     [:.group__sub-header {:margin-top "0"
