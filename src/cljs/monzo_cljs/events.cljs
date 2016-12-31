@@ -4,7 +4,7 @@
             [monzo-cljs.routing :refer [get-route-url]]
             [datascript.core :as d]
             [monzo-cljs.db :refer [app-datom-id]]
-            [monzo-cljs.api :refer [get-accounts get-transactions]]
+            [monzo-cljs.api :refer [get-accounts get-transactions get-balance]]
             [cljs-time.format :refer [formatter parse]]
             [clojure.string :refer [split]])
   (:require-macros [cljs.core.async.macros :refer [go-loop]]))
@@ -86,8 +86,17 @@
                        monzo-id-to-int)]
     [[[:db/add app-datom-id :app/selected-account account-id]]
      (fn [_ {:keys [http-get]}]
-       (-> (get-transactions (:id account) token http-get)
-           (transduce-chan (map #(vec [:api/transactions-retrieved (get-in % [:body :transactions]) account-id])))))]))
+       (let [{monzo-account-id :id} account]
+         (merge
+          [(-> (get-transactions monzo-account-id token http-get)
+               (transduce-chan (map #(vec [:api/transactions-retrieved (get-in % [:body :transactions]) account-id]))))
+           (-> (get-balance monzo-account-id token http-get)
+               (transduce-chan (map #(vec [:api/balance-retrieved (:body %) account-id]))))])))]))
+
+(defmethod process-event :api/balance-retrieved [[_ response account-id] db]
+  [(->> response
+        (namespace-keys "balance")
+        (map-to-update account-id))])
 
 (defmethod process-event :api/transactions-retrieved [[_ transactions account-id] db]
   [(->> transactions
@@ -112,7 +121,7 @@
   (go-loop []
     (let [event (<! event-chan)
           [db-update command] (process-event event @app-db)]
-      (println "event: " event)
+      ;(println "event: " event)
       (when-let [command-chan (and command (command @app-db dependencies))]
         (pipe command-chan event-chan false))
       (when db-update

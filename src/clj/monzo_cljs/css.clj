@@ -7,18 +7,29 @@
 (def monzo-blue "#14233c")
 
 (def header-styles {:color "white"
-                    :font-family "'Karla', sans-serif"
-                    :font-weight "800"})
+                    :font-family "'Karla', sans-serif"})
+(def big-font {:font-size "18px"
+               :font-weight "600"})
 
 (defstyles app
   [:body {:height "100%"
           :background-color "#F5F5F5"}
    [:header.app-bar {:position "relative"
                      :background-color monzo-blue}
+    [:.app-bar__row {:position "relative"}]
     [:.app-bar__logo {:position "absolute"
                      :left "8px"
                       :height "90%"}]
-    [:.app-bar__title header-styles]]
+    [:.app-bar__title (merge header-styles
+                             {:font-weight "800"})]
+    [:.app-bar__extra-info {:display "flex"
+                            :justify-content "space-around"
+                            :align-items "center"}
+     [:.app-bar__extra-info-section {:text-align "center"
+                                     :flex "1"}
+      [:h4 (merge header-styles
+                  {:margin-top "0"})]
+      [:h5 header-styles]]]]
    [:main.layout {:height "100%"
                   :justify-content "center"
                   :display "flex"
@@ -45,11 +56,9 @@
                           :border-radius "5px"
                           :text-align "center"}]
     [:.transaction__text {:display "flex"}
-     [:.transaction__amount {:display "flex"
-                             :flex "1"
-                             :justify-content "center"
-                             :font-size "18px"
-                             :font-weight "600"}]
+     [:.transaction__amount (merge big-font {:display "flex"
+                                             :flex "1"
+                                             :justify-content "center"})]
      [:.transaction__description-lines {:display "flex"
                                         :flex "5"
                                         :flex-direction "column"

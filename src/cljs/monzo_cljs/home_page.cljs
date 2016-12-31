@@ -1,22 +1,12 @@
 (ns monzo-cljs.home-page
   (:require [datascript.core :refer [pull q]]
             [monzo-cljs.db :refer [app-datom-id]]
-            [monzo-cljs.currencies :refer [currencies]]
-            [goog.string :as gstring]
-            [goog.string.format]
+            [monzo-cljs.utilities :refer [format-amount]]
             [cljs-time.coerce :as coerce-time]
             [cljs-time.core :as time :refer [year month day]]
             [cljs-time.format :as time-format]
             [clojure.string :refer [blank?]]
             [datascript.core :as d]))
-
-(defn format-amount [currency amount]
-  (let [symbol (-> (keyword currency)
-                   currencies
-                   :symbol_native)
-        sign (when (> 0 amount) "-")]
-    (gstring/format (str sign symbol "%.2f") (->> (/ amount 100)
-                                                  (.abs js/Math)))))
 
 (def date-format (time-format/formatter "dd MMMM yyyy"))
 (def date-time-format (time-format/formatter "dd/MM/yyyy HH:mm"))
