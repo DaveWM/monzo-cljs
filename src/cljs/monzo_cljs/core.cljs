@@ -47,3 +47,5 @@
   (start-event-loop events-chan app-db dependencies)
   (start-router! events-chan)
   (reload))
+
+(main)
