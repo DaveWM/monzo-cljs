@@ -21,7 +21,7 @@
 
 (defn map-to-update [id m]
   (->> m
-       (filter second)
+       (filter #(not (nil? (second %))))
        (map (fn [[k v]]
               [:db/add id k v]))))
 

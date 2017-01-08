@@ -10,6 +10,7 @@
 
 (def date-format (time-format/formatter "dd MMMM yyyy"))
 (def date-time-format (time-format/formatter "dd/MM/yyyy HH:mm"))
+(def decline-reasons {"INSUFFICIENT_FUNDS" "Transaction declined due to insufficient funds"})
 
 (defn format-date [date]
   (time-format/unparse date-format date))
@@ -19,8 +20,8 @@
 
 (defn sum-transactions [transactions]
   (->> transactions
-       (reduce (fn [sum [_ _ amount]]
-                 (+ sum amount))
+       (reduce (fn [sum [_ _ amount _ _ _ _ included?]]
+                 (+ sum (when included? amount)))
                0)))
 
 (defn get-transactions-currency [transactions]
@@ -32,15 +33,18 @@
       (first currencies))))
 
 (defn home-page [app-db]
-  (let [data (->> (q '[:find ?e ?created ?amount ?desc ?currency ?m
-                        :in $
-                        :where
-                        [?e :transaction/description ?desc]
-                        [?e :transaction/amount ?amount]
-                        [?e :transaction/currency ?currency]
-                        [?e :transaction/created ?created]
-                        [(get-else $ ?e :transaction/merchant-id false) ?m]]
-                      app-db)
+  (let [data (->> (q '[:find ?e ?created ?amount ?desc ?currency ?metadata ?decline-reason ?include ?m
+                       :in $
+                       :where
+                       [?e :transaction/description ?desc]
+                       [?e :transaction/amount ?amount]
+                       [?e :transaction/currency ?currency]
+                       [?e :transaction/created ?created]
+                       [?e :transaction/metadata ?metadata]
+                       [(get-else $ ?e :transaction/decline_reason false) ?decline-reason]
+                       [?e :transaction/include_in_spending ?include]
+                       [(get-else $ ?e :transaction/merchant-id false) ?m]]
+                     app-db)
                   (map (fn [transaction]
                          (let [m-id (last transaction)]
                            {:transaction transaction
@@ -83,9 +87,10 @@
                        [:ul {:class "mdl-list"}
                         (->> day-data
                              (sort-by (comp second :transaction) <)
-                             (map (fn [{[id created amount desc currency] :transaction
+                             (map (fn [{[id created amount desc currency {notes :notes} decline-reason included?] :transaction
                                         [icon logo merchant address] :merchant}]
-                                    (let [is-credit (pos? amount)]
+                                    (let [is-credit (pos? amount)
+                                          declined? (boolean decline-reason)]
                                       ^{:key id}
                                       [:li {:class (str "transaction mdl-list__item "
                                                         (if is-credit "transaction--credit" "transaction--debit"))}
@@ -95,11 +100,19 @@
                                          [:span {:class "mdl-list__item-icon transaction__icon"}
                                           (or icon "💰")])
                                        [:span {:class "mdl-list__item-primary-content transaction__text"}
-                                        [:span {:class "transaction__amount"} (format-amount currency (js/Math.abs amount))]
+                                        [:span {:class (str "transaction__amount "
+                                                            (when-not included?
+                                                              "transaction__amount--not-included"))}
+                                         (format-amount currency (js/Math.abs amount))]
                                         [:span {:class "transaction__description-lines"}
                                          [:span {:class "transaction__description-primary"}
                                           (or merchant desc)]
-                                         (when-let [addr (:short_formatted address)]
-                                           [:span {:class "transaction__description-secondary"} addr])]
+                                         (let [addr (:short_formatted address)]
+                                           [:span {:class  (str "transaction__description-secondary "
+                                                             (when declined?
+                                                               "transaction__description-secondary--warning"))}
+                                            (or (get decline-reasons decline-reason)
+                                                notes
+                                                addr)])]
                                         [:span {:class "transaction__date"}
                                          (format-date-time (goog.date.DateTime. created))]]]))))]]))))]])))

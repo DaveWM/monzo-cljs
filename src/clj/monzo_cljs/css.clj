@@ -62,7 +62,8 @@
      [:.transaction__amount (merge big-font {:display "flex"
                                              :flex "1"
                                              :justify-content "center"
-                                             :margin-right "10px"})]
+                                             :margin-right "10px"})
+      [:&--not-included {:text-decoration "line-through"}]]
      [:.transaction__description-lines {:display "flex"
                                         :flex "5"
                                         :flex-direction "column"
@@ -73,7 +74,8 @@
                                              :font-weight "400"
                                              :letter-spacing "0"
                                              :line-height "18px"
-                                             :color light-text-colour}]]
+                                             :color light-text-colour}
+       [:&--warning {:color debit-colour}]]]
      [:.transaction__date {:display "flex"
                            :flex "2"
                            :justify-content "flex-end"
