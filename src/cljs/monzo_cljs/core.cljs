@@ -27,6 +27,12 @@
     (println "dev mode")
     ))
 
+(if (aget js/navigator "serviceWorker")
+  (-> js/navigator
+      .-serviceWorker
+      (.register "./serviceWorker.js" (clj->js {:scope "./"}))
+      (.then #(println "service worker registered"))))
+
 (defonce app-db (get-app-db))
 
 (defonce events-chan (chan))
