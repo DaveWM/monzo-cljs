@@ -11,7 +11,8 @@
                                                .-location
                                                .-href
                                                url
-                                               (assoc :path nil))]
+                                               (assoc :path nil)
+                                               (assoc :query nil))]
                     (-> (apply url current-domain-url oauth-route)
                         str)))
 
