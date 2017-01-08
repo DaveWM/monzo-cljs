@@ -2,11 +2,11 @@
   (:require [datascript.core :refer [pull q]]
             [monzo-cljs.db :refer [app-datom-id]]
             [monzo-cljs.utilities :refer [format-amount]]
-            [cljs-time.coerce :as coerce-time]
             [cljs-time.core :as time :refer [year month day]]
             [cljs-time.format :as time-format]
             [clojure.string :refer [blank?]]
-            [datascript.core :as d]))
+            [datascript.core :as d])
+  (:import [goog.date.DateTime]))
 
 (def date-format (time-format/formatter "dd MMMM yyyy"))
 (def date-time-format (time-format/formatter "dd/MM/yyyy HH:mm"))
@@ -58,6 +58,7 @@
        [:div {:class "mdl-card__supporting-text"}
         (->> data
              (group-by (comp (juxt year month day)
+                             #(goog.date.DateTime. %)
                              second
                              :transaction))
              (sort-by first)
@@ -97,4 +98,4 @@
                                          (when-let [addr (:short_formatted address)]
                                            [:span {:class "transaction__description-secondary"} addr])]
                                         [:span {:class "transaction__date"}
-                                         (format-date-time created)]]]))))]]))))]])))
+                                         (format-date-time (goog.date.DateTime. created))]]]))))]]))))]])))

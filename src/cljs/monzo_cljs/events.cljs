@@ -5,7 +5,6 @@
             [datascript.core :as d]
             [monzo-cljs.db :refer [app-datom-id]]
             [monzo-cljs.api :refer [get-accounts get-transactions get-balance]]
-            [cljs-time.format :refer [formatter parse]]
             [clojure.string :refer [split]])
   (:require-macros [cljs.core.async.macros :refer [go-loop]]))
 
@@ -27,18 +26,15 @@
               [:db/add id k v]))))
 
 (defn convert-date-keys [keys m]
-  (let [format (formatter "yyyy-MM-dd'T'HH:mm:ss")]
-    (reduce (fn [result k]
-              (update result k (comp (partial parse format)
-                                     first
-                                     #(split % #"[Z\.]"))))
-            m keys)))
+  (reduce (fn [result k]
+            (update result k #(js/Date. %)))
+          m keys))
 
 (defmulti process-event first)
 (defmethod process-event :default [] nil)
 
 (defmethod process-event :routes/home [[route] db]
-  (let [{token :ls/token} (d/pull db [:ls/token] app-datom-id)]
+  (let [{token :auth/token} (d/pull db [:auth/token] app-datom-id)]
     [[[:db/add app-datom-id :routes/current route]]
      (fn [_ {:keys [http-get]}]
        (merge [(-> (check-token-valid token http-get)
@@ -61,9 +57,8 @@
              (transduce-chan (map #(vec [:auth/token-received (get-in % [:body :access_token])])))))])
 
 (defmethod process-event :auth/token-received [[_ token] db]
-  [[[:db/add app-datom-id :ls/token token]]
-   (fn [_ {:keys [local-storage window]}]
-     (.setItem local-storage "token" token)
+  [[[:db/add app-datom-id :auth/token token]]
+   (fn [_ {:keys [window]}]
      (set! (.-href (.-location window))
            (get-route-url :routes/home))
      (chan))])
@@ -80,7 +75,7 @@
    #(to-chan [[:action/account-selected (first accounts)]])])
 
 (defmethod process-event :action/account-selected [[_ account] db]
-  (let [{token :ls/token} (d/pull db [:ls/token] app-datom-id)
+  (let [{token :auth/token} (d/pull db [:auth/token] app-datom-id)
         account-id (-> account
                        :id
                        monzo-id-to-int)]

@@ -1,8 +1,10 @@
 (ns monzo-cljs.db
   (:require [datascript.core :as d]
-            [cemerick.url :refer [url]]))
+            [cemerick.url :refer [url]]
+            [cljs.reader :as reader]))
 
 (def app-datom-id 1)
+(def local-storage-key "state")
 
 (defn get-url-params []
   (-> js/window
@@ -19,12 +21,10 @@
        (into {})))
 
 (defn get-app-db []
-  (let [app-db (d/create-conn)]
-    
-    (d/transact! app-db [[:db/add app-datom-id :app/title "Monzo Web"]])
-    
-    (d/transact! app-db (->> (get-local-storage)
-                           (map (fn [[ls-key ls-value]]
-                                  [:db/add app-datom-id (keyword "ls" ls-key) ls-value]))))
+  (-> (if-let [serialized-state (-> (.getItem js/localStorage local-storage-key))]
+        (reader/read-string serialized-state)
+        (d/db-with (d/empty-db) [[:db/add app-datom-id :app/title "Monzo Web"]]))
+      d/conn-from-db))
 
-    app-db))
+(defn save-app-db [db]
+  (.setItem js/localStorage local-storage-key (pr-str db)))

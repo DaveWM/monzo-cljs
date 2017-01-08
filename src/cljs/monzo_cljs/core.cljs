@@ -2,7 +2,7 @@
   (:require
    [reagent.core :as reagent]
    [monzo-cljs.root-component :refer [root-component]]
-   [monzo-cljs.db :refer [get-app-db app-datom-id]]
+   [monzo-cljs.db :refer [get-app-db save-app-db app-datom-id]]
    [cemerick.url :refer [url]]
    [monzo-cljs.routing :refer [start-router!]]
    [monzo-cljs.events :refer [start-event-loop]]
@@ -47,6 +47,7 @@
                   (.getElementById js/document "app")))
 
 (add-watch app-db :render reload)
+(add-watch app-db :save #(save-app-db @app-db))
 
 (defn main []
   (dev-setup)
