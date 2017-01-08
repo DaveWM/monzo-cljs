@@ -7,7 +7,13 @@
             [monzo-cljs.credentials :refer [credentials]])
   (:require-macros [cljs.core.async.macros :refer [go]]))
 
-(def redirect-url (str (apply url "http://localhost:8000" oauth-route)))
+(def redirect-url (let [current-domain-url (-> js/window
+                                               .-location
+                                               .-href
+                                               url
+                                               (assoc :path nil))]
+                    (-> (apply url current-domain-url oauth-route)
+                        str)))
 
 (def oauth-url (-> (url "https://auth.getmondo.co.uk")
                       (assoc :query {:client_id (:client-id credentials)
