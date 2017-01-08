@@ -30,6 +30,9 @@
             (update result k #(js/Date. %)))
           m keys))
 
+(defn success? [response]
+  (>= 299 (:status response) 200))
+
 (defmulti process-event first)
 (defmethod process-event :default [] nil)
 
@@ -38,13 +41,16 @@
     [[[:db/add app-datom-id :routes/current route]]
      (fn [_ {:keys [http-get]}]
        (merge [(-> (check-token-valid token http-get)
-                    (transduce-chan (map #(vec [:auth/token-checked (and (not= (:status %) 401)
-                                                                         (get-in % [:body :authenticated]))]))))
+                   (transduce-chan (map #(vec [:auth/token-checked
+                                               (and (not= (:status %) 401)
+                                                    (get-in % [:body :authenticated]))
+                                               (zero? (:status %))]))))
                (-> (get-accounts token http-get)
-                   (transduce-chan (map #(vec [:api/accounts-retrieved (get-in % [:body :accounts])]))))]))]))
+                   (transduce-chan (comp (filter success?)
+                                         (map #(vec [:api/accounts-retrieved (get-in % [:body :accounts])])))))]))]))
 
-(defmethod process-event :auth/token-checked [[_ token-valid?] db]
-  (when-not token-valid?
+(defmethod process-event :auth/token-checked [[_ token-valid? offline?] db]
+  (when (and (not offline?) (not token-valid?))
     [nil (fn [_ {:keys [window]}]
            (set! (.-href (.-location window))
                  oauth-url)
@@ -71,22 +77,28 @@
         (mapcat (fn [{:keys [id description created]}]
                   (let [int-id (monzo-id-to-int id)]
                     [[:db/add int-id :account/description description]
-                     [:db/add int-id :account/created created]]))))
-   #(to-chan [[:action/account-selected (first accounts)]])])
+                     [:db/add int-id :account/created created]
+                     [:db/add int-id :account/monzo-id id]]))))
+   (fn [db]
+     (when-let [account-id (-> (d/q '[:find ?e
+                                      :where [?e :account/description]]
+                                    db)
+                               first
+                               first)]
+       (to-chan [[:action/account-selected account-id]])))])
 
-(defmethod process-event :action/account-selected [[_ account] db]
-  (let [{token :auth/token} (d/pull db [:auth/token] app-datom-id)
-        account-id (-> account
-                       :id
-                       monzo-id-to-int)]
+(defmethod process-event :action/account-selected [[_ account-id] db]
+  (let [{token :auth/token} (d/pull db [:auth/token] app-datom-id)]
     [[[:db/add app-datom-id :app/selected-account account-id]]
      (fn [_ {:keys [http-get]}]
-       (let [{monzo-account-id :id} account]
+       (let [{monzo-account-id :account/monzo-id} (d/pull db '[:account/monzo-id] account-id)]
          (merge
           [(-> (get-transactions monzo-account-id token http-get)
-               (transduce-chan (map #(vec [:api/transactions-retrieved (get-in % [:body :transactions]) account-id]))))
+               (transduce-chan (comp (filter success?)
+                                     (map #(vec [:api/transactions-retrieved (get-in % [:body :transactions]) account-id])))))
            (-> (get-balance monzo-account-id token http-get)
-               (transduce-chan (map #(vec [:api/balance-retrieved (:body %) account-id]))))])))]))
+               (transduce-chan (comp (filter success?)
+                                     (map #(vec [:api/balance-retrieved (:body %) account-id])))))])))]))
 
 (defmethod process-event :api/balance-retrieved [[_ response account-id] db]
   [(->> response
@@ -116,9 +128,8 @@
   (go-loop []
     (let [event (<! event-chan)
           [db-update command] (process-event event @app-db)]
-      ;(println "event: " event)
-      (when-let [command-chan (and command (command @app-db dependencies))]
-        (pipe command-chan event-chan false))
       (when db-update
         (d/transact! app-db db-update))
+      (when-let [command-chan (and command (command @app-db dependencies))]
+        (pipe command-chan event-chan false))
       (recur))))
