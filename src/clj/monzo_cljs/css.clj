@@ -11,17 +11,37 @@
 (def big-font {:font-size "18px"
                :font-weight "600"})
 
+(def button [:.button {:margin "0 5px"}
+             [:&--monzo-blue {:background-color "#C1D0E9"}
+              [:&:hover {:background-color "#96A5BE"}]]
+             [:&--disabled {:opacity "0.3"
+                            :cursor "not-allowed"}]])
+
+(def flex-padder [:.flex-padder {:flex "100"}])
+
 (defstyles app
   [:body {:height "100%"
           :background-color "#F5F5F5"}
+   button
+   flex-padder
    [:header.app-bar {:position "relative"
                      :background-color monzo-blue}
-    [:.app-bar__row {:position "relative"}]
+    [:.app-bar__row {:position "relative"
+                     :height "inherit"
+                     :margin "10px 0"}]
     [:.app-bar__logo {:position "absolute"
                      :left "8px"
                       :height "90%"}]
     [:.app-bar__title (merge header-styles
                              {:font-weight "800"})]
+    [:.app-bar__buttons {:display "flex"
+                         :flex-direction "row"
+                         :flex-wrap "wrap"
+                         :margin "0 10px"
+                         :flex "8"
+                         :flex-basis "300px"}
+     [:.button {:flex "1"
+                :margin-top "3px"}]]
     [:.app-bar__extra-info {:display "flex"
                             :justify-content "space-around"
                             :align-items "center"}
