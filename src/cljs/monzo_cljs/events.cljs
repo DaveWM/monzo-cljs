@@ -83,18 +83,25 @@
      (when-let [account-id (-> (d/q '[:find ?e
                                       :where [?e :account/description]]
                                     db)
-                               first
-                               first)]
+                               ffirst)]
        (to-chan [[:action/account-selected account-id]])))])
 
 (defmethod process-event :action/account-selected [[_ account-id] db]
   (let [{token :auth/token} (d/pull db [:auth/token] app-datom-id)]
     [[[:db/add app-datom-id :app/selected-account account-id]
       [:db/add app-datom-id :transactions/loading true]]
-     (fn [_ {:keys [http-get]}]
-       (let [{monzo-account-id :account/monzo-id} (d/pull db '[:account/monzo-id] account-id)]
+     (fn [db {:keys [http-get]}]
+       (let [{monzo-account-id :account/monzo-id} (d/pull db '[:account/monzo-id] account-id)
+             last-transaction-id (->> (d/q '[:find ?id ?date
+                                             :where
+                                             [?e :transaction/created ?date]
+                                             [?e :transaction/id ?id]]
+                                           db)
+                                      (sort-by second)
+                                      reverse
+                                      ffirst)]
          (merge
-          [(-> (get-transactions monzo-account-id token http-get)
+          [(-> (get-transactions monzo-account-id last-transaction-id token http-get)
                (transduce-chan (comp (filter success?)
                                      (map #(vec [:api/transactions-retrieved (get-in % [:body :transactions]) account-id])))))
            (-> (get-balance monzo-account-id token http-get)
