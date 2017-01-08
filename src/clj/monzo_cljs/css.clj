@@ -37,7 +37,9 @@
    [:.home-card {:width "100%"
                  :max-width "1200px"}
     [:.home-card__title {:height "100px"
-                         :background-color monzo-blue}
+                         :background-color monzo-blue
+                         :justify-content "space-between"
+                         :align-items "flex-end"}
      [:h2 header-styles]]]
    [:.group
     [:.group__header {:margin-bottom "3px"}]

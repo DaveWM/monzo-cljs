@@ -89,7 +89,8 @@
 
 (defmethod process-event :action/account-selected [[_ account-id] db]
   (let [{token :auth/token} (d/pull db [:auth/token] app-datom-id)]
-    [[[:db/add app-datom-id :app/selected-account account-id]]
+    [[[:db/add app-datom-id :app/selected-account account-id]
+      [:db/add app-datom-id :transactions/loading true]]
      (fn [_ {:keys [http-get]}]
        (let [{monzo-account-id :account/monzo-id} (d/pull db '[:account/monzo-id] account-id)]
          (merge
@@ -106,22 +107,23 @@
         (map-to-update account-id))])
 
 (defmethod process-event :api/transactions-retrieved [[_ transactions account-id] db]
-  [(->> transactions
-        (mapcat (fn [{:keys [id] :as transaction}]
-                  (let [db-id (monzo-id-to-int id)
-                        merchant-id (-> transaction
-                                        (get-in [:merchant :id])
-                                        monzo-id-to-int)]
-                    (concat (as-> transaction t
-                              (assoc t :transaction/account-id account-id)
-                              (assoc t :transaction/merchant-id merchant-id)
-                              (dissoc t :merchant)
-                              (convert-date-keys [:created] t)
-                              (namespace-keys "transaction" t)
-                              (map-to-update db-id t))
-                            (->> (:merchant transaction)
-                                 (namespace-keys "merchant")
-                                 (map-to-update merchant-id)))))))])
+  [(conj (->> transactions
+              (mapcat (fn [{:keys [id] :as transaction}]
+                        (let [db-id (monzo-id-to-int id)
+                              merchant-id (-> transaction
+                                              (get-in [:merchant :id])
+                                              monzo-id-to-int)]
+                          (concat (as-> transaction t
+                                    (assoc t :transaction/account-id account-id)
+                                    (assoc t :transaction/merchant-id merchant-id)
+                                    (dissoc t :merchant)
+                                    (convert-date-keys [:created] t)
+                                    (namespace-keys "transaction" t)
+                                    (map-to-update db-id t))
+                                  (->> (:merchant transaction)
+                                       (namespace-keys "merchant")
+                                       (map-to-update merchant-id)))))))
+         [:db/add app-datom-id :transactions/loading false])])
 
 
 (defn start-event-loop [event-chan app-db dependencies]

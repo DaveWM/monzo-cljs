@@ -47,14 +47,18 @@
                             :merchant (when m-id
                                         (-> (d/pull app-db '[:merchant/emoji :merchant/logo :merchant/name :merchant/address]
                                                    m-id)
-                                            ((juxt :merchant/emoji :merchant/logo :merchant/name :merchant/address))))}))))]
+                                            ((juxt :merchant/emoji :merchant/logo :merchant/name :merchant/address))))}))))
+        {loading :transactions/loading} (pull app-db '[:transactions/loading] app-datom-id)]
     (if (empty? data)
       
       [:div {:class "mdl-spinner mdl-js-spinner is-active"}]
       
       [:div {:class "home-card mdl-card mdl-shadow--2dp"}
        [:div {:class "home-card__title mdl-card__title"}
-        [:h2 {:class "mdl-card__title-text"} "Transactions"]]
+        [:h2 {:class "mdl-card__title-text"} "Transactions"]
+        [:span loading]
+        (when loading
+          [:div {:class "mdl-spinner mdl-js-spinner is-active"}])]
        [:div {:class "mdl-card__supporting-text"}
         (->> data
              (group-by (comp (juxt year month day)
