@@ -101,7 +101,7 @@
                                           (or icon "💰")])
                                        [:span {:class "mdl-list__item-primary-content transaction__text"}
                                         [:span {:class (str "transaction__amount "
-                                                            (when-not included?
+                                                            (when declined?
                                                               "transaction__amount--not-included"))}
                                          (format-amount currency (js/Math.abs amount))]
                                         [:span {:class "transaction__description-lines"}
