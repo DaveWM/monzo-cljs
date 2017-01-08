@@ -56,11 +56,13 @@
                           :font-size "45px"
                           :height "auto"
                           :border-radius "5px"
-                          :text-align "center"}]
+                          :text-align "center"
+                          :margin "0 5px"}]
     [:.transaction__text {:display "flex"}
      [:.transaction__amount (merge big-font {:display "flex"
                                              :flex "1"
-                                             :justify-content "center"})]
+                                             :justify-content "center"
+                                             :margin-right "10px"})]
      [:.transaction__description-lines {:display "flex"
                                         :flex "5"
                                         :flex-direction "column"
@@ -76,4 +78,6 @@
                            :flex "2"
                            :justify-content "flex-end"
                            :color light-text-colour
-                           :font-size "0.9em"}]]]])
+                           :font-size "0.9em"
+                           :margin "0 5px"
+                           :text-align "center"}]]]])
