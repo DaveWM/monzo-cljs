@@ -1,6 +1,6 @@
 # monzo-cljs
 
-A [reagent](https://github.com/reagent-project/reagent) application designed to ... well, that part is up to you.
+A [reagent](https://github.com/reagent-project/reagent) web app for interacting with your monzo accounts.
 
 ## Development Mode
 
