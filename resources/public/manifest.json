@@ -1,7 +1,7 @@
 {
   "name": "Monzo Web",
   "short_name": "Monzo",
-  "theme_color": "#fff",
+  "theme_color": "#14233c",
   "background_color": "#14233c",
   "display": "standalone",
   "Scope": "/",
