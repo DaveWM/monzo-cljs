@@ -2,6 +2,15 @@
 
 A [reagent](https://github.com/reagent-project/reagent) web app for interacting with your monzo accounts.
 
+While monzo is in beta, you must host monzo-cljs yourself, using your own client id and secret. Add these details to `src/cljs/monzo_cljs/credentials.cljs` like so:
+
+```clojure
+(ns monzo-cljs.credentials)
+
+(def credentials {:client-id "id"
+                  :client-secret "secret"})
+```
+
 ## Development Mode
 
 ### Start Cider from Emacs:
