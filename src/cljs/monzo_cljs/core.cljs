@@ -34,6 +34,7 @@
       (.then #(println "service worker registered"))))
 
 (defonce app-db (get-app-db))
+(defonce r-app-db (reagent/atom @app-db))
 
 (defonce events-chan (chan))
 
@@ -42,11 +43,15 @@
                    :http-post http/post
                    :local-storage js/localStorage})
 
+(defn container [child]
+  (let [db @r-app-db]
+    [child db]))
+
 (defn reload []
-  (reagent/render [root-component @app-db]
+  (reagent/render [container root-component]
                   (.getElementById js/document "app")))
 
-(add-watch app-db :render reload)
+(add-watch app-db :render #(reset! r-app-db @app-db))
 (add-watch app-db :save #(save-app-db @app-db))
 
 (defn main []
