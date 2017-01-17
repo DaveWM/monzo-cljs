@@ -31,6 +31,9 @@ function precache() {
       })
       .then(() => {
 	return cacheCrossDomain(cache, 'https://code.getmdl.io/1.2.1/material.indigo-pink.min.css');
+      })
+      .then(() => {
+	return cacheCrossDomain(cache, 'https://code.getmdl.io/1.3.0/material.min.js');
       });
   });
 }
