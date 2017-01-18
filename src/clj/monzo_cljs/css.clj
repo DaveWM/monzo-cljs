@@ -17,6 +17,17 @@
              [:&--disabled {:opacity "0.3"
                             :cursor "not-allowed"}]])
 
+(def menu [:.menu {:position "relative"}
+           [:.menu__dropdown {:position "absolute"
+                              :right "50%"
+                              :background "white"
+                              :box-shadow "0 2px 2px 0 rgba(0,0,0,.14), 0 3px 1px -2px rgba(0,0,0,.2), 0 1px 5px 0 rgba(0,0,0,.12)"
+                              :padding "8px 0"
+                              :margin "5px 0"}
+            [:.menu__dropdown-item {:opacity "1"}
+             [:a {:text-decoration "none"
+                  :color "black"}]]]])
+
 (def flex-padder [:.flex-padder {:flex "100"}])
 
 (defstyles app
@@ -24,6 +35,7 @@
           :background-color "#F5F5F5"}
    button
    flex-padder
+   menu
    [:header.app-bar {:position "relative"
                      :background-color monzo-blue}
     [:.app-bar__row {:position "relative"
@@ -34,14 +46,6 @@
                       :height "90%"}]
     [:.app-bar__title (merge header-styles
                              {:font-weight "800"})]
-    [:.app-bar__buttons {:display "flex"
-                         :flex-direction "row"
-                         :flex-wrap "wrap"
-                         :margin "0 10px"
-                         :flex "8"
-                         :flex-basis "300px"}
-     [:.button {:flex "1"
-                :margin-top "3px"}]]
     [:.app-bar__extra-info {:display "flex"
                             :justify-content "space-around"
                             :align-items "center"}

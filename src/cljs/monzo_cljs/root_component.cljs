@@ -4,10 +4,27 @@
             [monzo-cljs.utilities :refer [format-amount]]
             [datascript.core :refer [pull]]
             [clojure.string :as str]
-            [cemerick.url :refer [url]]))
+            [cemerick.url :refer [url]]
+            [reagent.core :as r]))
 
 (def route-component-map {:routes/home home-page
                           :routes/oauth #(vec [:span "Authenticating..."])})
+
+(defn menu [icon-name & menu-items]
+  (let [id (str (gensym))
+        open (r/atom false)
+        menu-position (r/atom [0 0])]
+    (fn []
+      [:span.menu
+       [:button {:class "mdl-button mdl-js-button mdl-button--icon mdl-button--raised"
+                 :on-click #(swap! open not)}
+        [:i {:class "material-icons"} icon-name]]
+       (when @open
+         [:ul.menu__dropdown
+          menu-items])])))
+
+(defn menu-item [content]
+  [:li.mdl-menu__item.menu__dropdown-item content])
 
 (defn header [title balance spent-today currency username]
   [:header {:class "mdl-layout__header app-bar"}
@@ -20,12 +37,10 @@
                                           (str/lower-case)))
           payments-url (url "https://monzo.me")
           topup-url (when url-username (url payments-url url-username))]
-      [:div.app-bar__buttons
-       [:a {:href (str topup-url) :class (str "button button--monzo-blue mdl-button mdl-button--raised "
-                                              (when-not topup-url "button--disabled"))}
-        "Top up"]
-       [:a {:href (str payments-url) :class "button button--monzo-blue mdl-button mdl-button--raised "}
-        "Send Money"]])]
+      [:div
+       [menu "local_atm"
+        [menu-item [:a {:href (str payments-url)} "Send Payment"]]
+        [menu-item [:a {:href (str topup-url)} "Top Up"]]]])]
    [:div {:class "app-bar__extra-info"}
     [:span {:class "app-bar__extra-info-section"}
      [:h4 "Balance"]
