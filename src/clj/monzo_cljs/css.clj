@@ -101,7 +101,7 @@
                             :flex-basis "72px"
                             :margin "0 8px"}])]
      [:.transaction__description-lines {:display "flex"
-                                        :flex 5
+                                        :flex 4
                                         :flex-direction "column"
                                         :align-content "center"
                                         :justify-content "center"
@@ -116,7 +116,8 @@
        (at-media mobile [(s/& (s/not :.transaction__description-secondary--warning)) {:display "none"}])]]
      [:.transaction__date {:display "flex"
                            :justify-content "flex-end"
-                           :flex 2
+                           :flex 1
+                           :flex-grow 0
                            :color light-text-colour
                            :font-size "0.9em"
                            :margin "0 5px"

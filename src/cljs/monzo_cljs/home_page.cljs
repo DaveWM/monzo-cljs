@@ -10,6 +10,7 @@
 
 (def date-format (time-format/formatter "dd MMMM yyyy"))
 (def date-time-format (time-format/formatter "dd/MM/yyyy HH:mm"))
+(def time-only-format (time-format/formatter "HH:mm"))
 (def decline-reasons {"INSUFFICIENT_FUNDS" "Transaction declined due to insufficient funds"})
 
 (defn format-date [date]
@@ -17,6 +18,9 @@
 
 (defn format-date-time [date]
   (time-format/unparse date-time-format date))
+
+(defn format-time [date]
+  (time-format/unparse time-only-format date))
 
 (defn sum-transactions [transactions]
   (->> transactions
@@ -115,4 +119,4 @@
                                                 notes
                                                 addr)])]
                                         [:span {:class "transaction__date"}
-                                         (format-date-time (goog.date.DateTime. created))]]]))))]]))))]])))
+                                         (format-time (goog.date.DateTime. created))]]]))))]]))))]])))
