@@ -1,13 +1,14 @@
 (ns monzo-cljs.css
   (:require [garden.def :refer [defstyles]]
-            [garden.stylesheet :refer [at-media]]))
+            [garden.stylesheet :refer [at-media]]
+            [garden.selectors :as s]))
 
 (def light-text-colour "rgba(0,0,0,0.54)")
 (def debit-colour "#D50000")
 (def credit-colour "#8BC34A")
 (def monzo-blue "#14233c")
 
-(def mobile {:max-width "768px"})
+(def mobile {:max-width "720px"})
 
 (def header-styles {:color "white"
                     :font-family "'Karla', sans-serif"})
@@ -87,28 +88,35 @@
                           :height "auto"
                           :border-radius "5px"
                           :text-align "center"
-                          :margin "0 5px"}]
+                          :margin "0 5px 0 0"}
+     (at-media mobile [:& {:width "25px"
+                           :font-size "23px"}])]
     [:.transaction__text {:display "flex"}
      [:.transaction__amount (merge big-font {:display "flex"
-                                             :flex "1"
+                                             :flex-basis "80px"
                                              :justify-content "center"
-                                             :margin-right "10px"})
-      [:&--not-included {:text-decoration "line-through"}]]
+                                             :margin "0 12px"})
+      [:&--not-included {:text-decoration "line-through"}]
+      (at-media mobile [:& {:font-size "16px"
+                            :flex-basis "72px"
+                            :margin "0 8px"}])]
      [:.transaction__description-lines {:display "flex"
-                                        :flex "5"
+                                        :flex 5
                                         :flex-direction "column"
                                         :align-content "center"
-                                        :justify-content "center"}
+                                        :justify-content "center"
+                                        :margin "0 8px"}
       [:.transaction__description-primary {}]
       [:.transaction__description-secondary {:font-size "14px"
                                              :font-weight "400"
                                              :letter-spacing "0"
                                              :line-height "18px"
                                              :color light-text-colour}
-       [:&--warning {:color debit-colour}]]]
+       [:&--warning {:color debit-colour}]
+       (at-media mobile [(s/& (s/not :.transaction__description-secondary--warning)) {:display "none"}])]]
      [:.transaction__date {:display "flex"
-                           :flex "2"
                            :justify-content "flex-end"
+                           :flex 2
                            :color light-text-colour
                            :font-size "0.9em"
                            :margin "0 5px"
