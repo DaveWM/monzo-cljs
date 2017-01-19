@@ -1,10 +1,13 @@
 (ns monzo-cljs.css
-  (:require [garden.def :refer [defstyles]]))
+  (:require [garden.def :refer [defstyles]]
+            [garden.stylesheet :refer [at-media]]))
 
 (def light-text-colour "rgba(0,0,0,0.54)")
 (def debit-colour "#D50000")
 (def credit-colour "#8BC34A")
 (def monzo-blue "#14233c")
+
+(def mobile {:max-width "768px"})
 
 (def header-styles {:color "white"
                     :font-family "'Karla', sans-serif"})
@@ -40,12 +43,15 @@
                      :background-color monzo-blue}
     [:.app-bar__row {:position "relative"
                      :height "inherit"
-                     :margin "10px 0"}]
-    [:.app-bar__logo {:position "absolute"
-                     :left "8px"
-                      :height "90%"}]
+                     :margin "10px 0"
+                     :padding "0 8px"}]
+    [:.app-bar__logo {:height "35px"
+                      :margin-right "15px"}]
     [:.app-bar__title (merge header-styles
-                             {:font-weight "800"})]
+                             {:font-weight "800"
+                              :flex 1
+                              :text-align "left"})
+     (at-media mobile [:& {:text-align "center"}])]
     [:.app-bar__extra-info {:display "flex"
                             :justify-content "space-around"
                             :align-items "center"}

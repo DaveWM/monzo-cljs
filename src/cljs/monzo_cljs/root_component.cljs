@@ -31,7 +31,6 @@
    [:div {:class "mdl-layout__header-row app-bar__row"}
     [:img {:src "images/monzo-logo.png" :class "app-bar__logo"}]
     [:span {:class "mdl-layout-title app-bar__title"} title]
-    [:span.flex-padder]
     (let [url-username (when username (-> username
                                           (str/replace #"\s+" "")
                                           (str/lower-case)))
