@@ -22,10 +22,13 @@
 (defn format-time [date]
   (time-format/unparse time-only-format date))
 
+(defn declined? [[_ _ _ _ _ _ decline-reason]]
+  (boolean decline-reason))
+
 (defn sum-transactions [transactions]
   (->> transactions
-       (reduce (fn [sum [_ _ amount _ _ _ _ included?]]
-                 (+ sum (when included? amount)))
+       (reduce (fn [sum [_ _ amount :as t]]
+                 (+ sum (when (not (declined? t)) amount)))
                0)))
 
 (defn get-transactions-currency [transactions]
@@ -91,10 +94,10 @@
                        [:ul {:class "mdl-list"}
                         (->> day-data
                              (sort-by (comp second :transaction) <)
-                             (map (fn [{[id created amount desc currency {notes :notes} decline-reason included?] :transaction
+                             (map (fn [{[id created amount desc currency {notes :notes} decline-reason included? :as transaction] :transaction
                                         [icon logo merchant address] :merchant}]
                                     (let [is-credit (pos? amount)
-                                          declined? (boolean decline-reason)]
+                                          declined (declined? transaction)]
                                       ^{:key id}
                                       [:li {:class (str "transaction mdl-list__item "
                                                         (if is-credit "transaction--credit" "transaction--debit"))}
@@ -105,7 +108,7 @@
                                           (or icon "💰")])
                                        [:span {:class "mdl-list__item-primary-content transaction__text"}
                                         [:span {:class (str "transaction__amount "
-                                                            (when declined?
+                                                            (when declined
                                                               "transaction__amount--not-included"))}
                                          (format-amount currency (js/Math.abs amount))]
                                         [:span {:class "transaction__description-lines"}
@@ -113,7 +116,7 @@
                                           (or merchant desc)]
                                          (let [addr (:short_formatted address)]
                                            [:span {:class  (str "transaction__description-secondary "
-                                                             (when declined?
+                                                             (when declined
                                                                "transaction__description-secondary--warning"))}
                                             (or (get decline-reasons decline-reason)
                                                 notes
