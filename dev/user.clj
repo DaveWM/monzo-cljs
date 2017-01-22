@@ -10,6 +10,10 @@
 (defn cljs-repl []
   (f/cljs-repl))
 
+(defn go []
+  (do (start)
+      (cljs-repl)))
+
 (defn stop []
   (f/stop-figwheel!))
 
