@@ -71,7 +71,8 @@
                          :background-color monzo-blue
                          :justify-content "space-between"
                          :align-items "flex-end"}
-     [:h2 header-styles]]]
+     [:h2 header-styles]]
+    [:.home-card__refresh {:color "white"}]]
    [:.group
     [:.group__header {:margin-bottom "3px"}]
     [:.group__sub-header {:margin-top "0"

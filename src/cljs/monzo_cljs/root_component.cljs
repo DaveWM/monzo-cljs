@@ -52,7 +52,7 @@
             (format-amount currency (js/Math.abs spent-today))
             "-")]]]])
 
-(defn root-component [conn]
+(defn root-component [conn event-chan]
   (let [{title :app/title route :routes/current selected-account :app/selected-account}
         (pull conn '[:app/title :routes/current :app/selected-account] app-datom-id)
         {balance :balance/balance currency :balance/currency spent-today :balance/spend_today username :account/description}
@@ -63,6 +63,6 @@
      (header title balance spent-today currency username)
      [:main {:class "layout mdl-layout__content"}
       (when page
-        (page conn))]]))
+        (page conn event-chan))]]))
 
 

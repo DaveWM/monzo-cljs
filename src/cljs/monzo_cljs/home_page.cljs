@@ -5,7 +5,9 @@
             [cljs-time.core :as time :refer [year month day]]
             [cljs-time.format :as time-format]
             [clojure.string :refer [blank?]]
-            [datascript.core :as d])
+            [datascript.core :as d]
+            [cljs.core.async :refer [put!]])
+  (:require-macros [cljs.core.async.macros :refer [go]])
   (:import [goog.date.DateTime]))
 
 (def date-format (time-format/formatter "dd MMMM yyyy"))
@@ -39,7 +41,7 @@
     (when (= 1 (count currencies))
       (first currencies))))
 
-(defn home-page [app-db]
+(defn home-page [app-db event-chan]
   (let [data (->> (q '[:find ?e ?created ?amount ?desc ?currency ?metadata ?decline-reason ?include ?m
                        :in $
                        :where
@@ -68,8 +70,11 @@
        [:div {:class "home-card__title mdl-card__title"}
         [:h2 {:class "mdl-card__title-text"} "Transactions"]
         [:span loading]
-        (when loading
-          [:div {:class "mdl-spinner mdl-js-spinner is-active"}])]
+        (if loading
+          [:div {:class "mdl-spinner mdl-js-spinner is-active"}]
+          [:button {:class "home-card__refresh mdl-button mdl-js-button mdl-button--icon mdl-button--colored"
+                    :on-click #(go (put! event-chan [:action/refresh-transactions]))}
+           [:i {:class "material-icons"} "refresh"]])]
        [:div {:class "mdl-card__supporting-text"}
         (->> data
              (group-by (comp (juxt year month day)

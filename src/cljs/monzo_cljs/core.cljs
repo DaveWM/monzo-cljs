@@ -45,7 +45,7 @@
 
 (defn container [child]
   (let [db @r-app-db]
-    [child db]))
+    [child db events-chan]))
 
 (defn reload []
   (reagent/render [container root-component]
