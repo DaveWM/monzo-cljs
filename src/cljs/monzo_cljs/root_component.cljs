@@ -5,30 +5,15 @@
             [datascript.core :refer [pull]]
             [clojure.string :as str]
             [cemerick.url :refer [url]]
-            [reagent.core :as r]))
+            [reagent.core :as r]
+            [monzo-cljs.reagent-mdl :refer [Button IconButton Menu MenuItem Layout Content Header HeaderRow]]))
 
 (def route-component-map {:routes/home home-page
                           :routes/oauth #(vec [:span "Authenticating..."])})
 
-(defn menu [icon-name & menu-items]
-  (let [id (str (gensym))
-        open (r/atom false)
-        menu-position (r/atom [0 0])]
-    (fn []
-      [:span.menu
-       [:button {:class "mdl-button mdl-js-button mdl-button--icon mdl-button--raised"
-                 :on-click #(swap! open not)}
-        [:i {:class "material-icons"} icon-name]]
-       (when @open
-         [:ul.menu__dropdown
-          menu-items])])))
-
-(defn menu-item [content]
-  [:li.mdl-menu__item.menu__dropdown-item content])
-
 (defn header [title balance spent-today currency username]
-  [:header {:class "mdl-layout__header app-bar"}
-   [:div {:class "mdl-layout__header-row app-bar__row"}
+  [Header {:class "app-bar"}
+   [HeaderRow {:class "app-bar__row"}
     [:img {:src "images/monzo-logo.png" :class "app-bar__logo"}]
     [:span {:class "mdl-layout-title app-bar__title"} title]
     (let [url-username (when username (-> username
@@ -37,9 +22,15 @@
           payments-url (url "https://monzo.me")
           topup-url (when url-username (url payments-url url-username))]
       [:div
-       [menu "local_atm"
-        [menu-item [:a {:href (str payments-url)} "Send Payment"]]
-        [menu-item [:a {:href (str topup-url)} "Top Up"]]]])]
+       [IconButton {:class "mdl-button--raised"
+                    :name "local_atm"
+                    :id "payments-menu"}]
+       [Menu {:target "payments-menu"
+              :align "right"
+              :valign "bottom"
+              :class "menu"}
+        [MenuItem [:a {:href (str payments-url)} "Send Payment"]]
+        [MenuItem [:a {:href (str topup-url)} "Top Up"]]]])]
    [:div {:class "app-bar__extra-info"}
     [:span {:class "app-bar__extra-info-section"}
      [:h4 "Balance"]
@@ -59,9 +50,10 @@
         (when selected-account
           (pull conn '[:balance/balance :balance/currency :balance/spend_today :account/description] selected-account))
         page (get route-component-map route)]
-    [:div {:class "mdl-layout mdl-layout--fixed-header"}
+    [Layout {:fixedHeader true}
      (header title balance spent-today currency username)
-     [:main {:class "layout mdl-layout__content"}
+     [Content {:class "layout"
+               :component "main"}
       (when page
         (page conn event-chan))]]))
 

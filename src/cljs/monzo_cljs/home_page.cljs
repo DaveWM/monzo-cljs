@@ -6,7 +6,9 @@
             [cljs-time.format :as time-format]
             [clojure.string :refer [blank?]]
             [datascript.core :as d]
-            [cljs.core.async :refer [put!]])
+            [cljs.core.async :refer [put!]]
+            [monzo-cljs.reagent-mdl :refer [Spinner IconButton Card CardTitle mdl-List ListItem]]
+            [reagent.core :as r])
   (:require-macros [cljs.core.async.macros :refer [go]])
   (:import [goog.date.DateTime]))
 
@@ -64,17 +66,16 @@
         {loading :transactions/loading} (pull app-db '[:transactions/loading] app-datom-id)]
     (if (empty? data)
       
-      [:div {:class "mdl-spinner mdl-js-spinner is-active"}]
+      [Spinner]
       
-      [:div {:class "home-card mdl-card mdl-shadow--2dp"}
-       [:div {:class "home-card__title mdl-card__title"}
+      [Card {:class "home-card"}
+       [CardTitle {:class "home-card__title"}
         [:h2 {:class "mdl-card__title-text"} "Transactions"]
-        [:span loading]
         (if loading
-          [:div {:class "mdl-spinner mdl-js-spinner is-active"}]
-          [:button {:class "home-card__refresh mdl-button mdl-js-button mdl-button--icon mdl-button--colored"
-                    :on-click #(go (put! event-chan [:action/refresh-transactions]))}
-           [:i {:class "material-icons"} "refresh"]])]
+          [Spinner]
+          [IconButton {:class "home-card__refresh"
+                       :name "refresh"
+                       :on-click #(go (put! event-chan [:action/refresh-transactions]))}])]
        [:div {:class "mdl-card__supporting-text"}
         (->> data
              (group-by (comp (juxt year month day)
@@ -96,7 +97,7 @@
                                                "group__sub-header--positive"
                                                "group__sub-header--negative"))}
                             (str " " (format-amount currency sum))]))
-                       [:ul {:class "mdl-list"}
+                       [mdl-List
                         (->> day-data
                              (sort-by (comp second :transaction) <)
                              (map (fn [{[id created amount desc currency {notes :notes} decline-reason included? :as transaction] :transaction
@@ -104,8 +105,8 @@
                                     (let [is-credit (pos? amount)
                                           declined (declined? transaction)]
                                       ^{:key id}
-                                      [:li {:class (str "transaction mdl-list__item "
-                                                        (if is-credit "transaction--credit" "transaction--debit"))}
+                                      [ListItem {:class (str "transaction "
+                                                             (if is-credit "transaction--credit" "transaction--debit"))}
                                        (if (not (blank? logo))
                                          [:img {:class "mdl-list__item-icon transaction__icon"
                                                 :src logo}]
