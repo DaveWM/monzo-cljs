@@ -7,7 +7,7 @@
             [clojure.string :refer [blank?]]
             [datascript.core :as d]
             [cljs.core.async :refer [put!]]
-            [monzo-cljs.reagent-mdl :refer [Spinner IconButton Card CardTitle mdl-List ListItem]]
+            [monzo-cljs.reagent-mdl :refer [Spinner IconButton Card CardTitle List ListItem]]
             [reagent.core :as r])
   (:require-macros [cljs.core.async.macros :refer [go]])
   (:import [goog.date.DateTime]))
@@ -97,7 +97,7 @@
                                                "group__sub-header--positive"
                                                "group__sub-header--negative"))}
                             (str " " (format-amount currency sum))]))
-                       [mdl-List
+                       [List
                         (->> day-data
                              (sort-by (comp second :transaction) <)
                              (map (fn [{[id created amount desc currency {notes :notes} decline-reason included? :as transaction] :transaction
