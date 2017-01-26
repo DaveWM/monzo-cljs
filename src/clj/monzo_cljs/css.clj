@@ -41,7 +41,8 @@
    flex-padder
    menu
    [:.app-bar {:position "relative"
-                     :background-color monzo-blue}
+               :background-color monzo-blue
+               :display "flex !important"}
     [:.app-bar__row {:position "relative"
                      :height "inherit"
                      :margin "10px 0"
