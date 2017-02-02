@@ -23,7 +23,9 @@
 (defn get-app-db []
   (-> (if-let [serialized-state (-> (.getItem js/localStorage local-storage-key))]
         (reader/read-string serialized-state)
-        (d/db-with (d/empty-db) [[:db/add app-datom-id :app/title "Monzo Web"]]))
+        (d/db-with (d/empty-db) [[:db/add app-datom-id :app/title "Monzo Web"]
+                                 [:db/add app-datom-id :transactions/selected-group :category]
+                                 [:db/add app-datom-id :transactions/loading false]]))
       d/conn-from-db))
 
 (defn save-app-db [db]

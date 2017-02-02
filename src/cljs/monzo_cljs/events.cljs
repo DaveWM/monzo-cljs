@@ -149,6 +149,9 @@
                                        (map-to-update merchant-id)))))))
          [:db/add app-datom-id :transactions/loading false])])
 
+(defmethod process-event :action/select-transaction-grouping [[_ group-type] db]
+  [[[:db/add app-datom-id :transactions/selected-group group-type]]])
+
 
 (defn start-event-loop [event-chan app-db dependencies]
   (go-loop []

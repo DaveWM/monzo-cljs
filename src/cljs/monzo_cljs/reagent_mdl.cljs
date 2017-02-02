@@ -8,6 +8,7 @@
                      IconButton
                      Card
                      CardTitle
+                     Icon
                      List
                      ListItem
                      Menu

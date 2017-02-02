@@ -68,12 +68,29 @@
                   :padding-top "15px"}]
    [:.home-card {:width "100%"
                  :max-width "1200px"}
-    [:.home-card__title {:height "100px"
-                         :background-color monzo-blue
-                         :justify-content "space-between"
-                         :align-items "flex-end"}
-     [:h2 header-styles]]
-    [:.home-card__refresh {:color "white"}]]
+    [:.home-card__header {:background-color monzo-blue
+                          :align-items "flex-start"
+                          :flex-direction "column"
+                          :position "relative"}
+     [:.home-card__title {:display "flex"
+                          :justify-content "flex-start"
+                          :width "100%"
+                          :margin "10px 0"}]
+     [:.home-card__refresh {:position "absolute"
+                            :right "20px"
+                            :top "0px"
+                            :height "100%"
+                            :display "flex"
+                            :align-items "center"}]
+     [:.home-card__controls {:display "flex"
+                             :flex-direction "column"
+                             :justify-content "center"
+                             :align-items "center"}]
+     [:.home-card__options {:display "flex"
+                            :flex-direction "row"}]
+     [:i {:color "white"}]
+     (map #(vec [% (merge header-styles {:margin 0})]) [:h2 :h3 :h4 :h5 :p])]
+    [:.home-card__refresh-button {:color "white"}]]
    [:.group
     [:.group__header {:margin-bottom "3px"}]
     [:.group__sub-header {:margin-top "0"
