@@ -152,6 +152,14 @@
 (defmethod process-event :action/select-transaction-grouping [[_ group-type] db]
   [[[:db/add app-datom-id :transactions/selected-group group-type]]])
 
+(defmethod process-event :action/select-transaction-sorting [[_ sort-type] db]
+  [[[:db/add app-datom-id :transactions/selected-sort sort-type]
+    [:db/add app-datom-id :transactions/sort-direction true]]])
+
+(defmethod process-event :action/change-transaction-sort-direction [_ db]
+  (let [{:keys [transactions/sort-direction]} (d/pull db [:transactions/sort-direction] app-datom-id)]
+    [[[:db/add app-datom-id :transactions/sort-direction (not sort-direction)]]]))
+
 
 (defn start-event-loop [event-chan app-db dependencies]
   (go-loop []

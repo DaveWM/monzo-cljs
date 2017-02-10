@@ -24,7 +24,9 @@
   (-> (if-let [serialized-state (-> (.getItem js/localStorage local-storage-key))]
         (reader/read-string serialized-state)
         (d/db-with (d/empty-db) [[:db/add app-datom-id :app/title "Monzo Web"]
-                                 [:db/add app-datom-id :transactions/selected-group :category]
+                                 [:db/add app-datom-id :transactions/selected-group :date]
+                                 [:db/add app-datom-id :transactions/selected-sort :default]
+                                 [:db/add app-datom-id :transactions/sort-direction true]
                                  [:db/add app-datom-id :transactions/loading false]]))
       d/conn-from-db))
 

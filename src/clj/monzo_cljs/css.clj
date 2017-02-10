@@ -83,9 +83,12 @@
                             :display "flex"
                             :align-items "center"}]
      [:.home-card__controls {:display "flex"
-                             :flex-direction "column"
-                             :justify-content "center"
-                             :align-items "center"}]
+                             :flex-direction "row"}]
+     [:.home-card__control {:display "flex"
+                            :flex-direction "column"
+                            :justify-content "center"
+                            :align-items "center"
+                            :margin-right "20px"}]
      [:.home-card__options {:display "flex"
                             :flex-direction "row"}]
      [:i {:color "white"}]

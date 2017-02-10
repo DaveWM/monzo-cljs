@@ -8,7 +8,7 @@
             [clojure.string :refer [blank? capitalize split join]]
             [datascript.core :as d]
             [cljs.core.async :refer [put!]]
-            [monzo-cljs.reagent-mdl :refer [Spinner IconButton Card CardTitle List ListItem]]
+            [monzo-cljs.reagent-mdl :refer [Spinner IconButton Card CardTitle List ListItem Icon]]
             [reagent.core :as r])
   (:require-macros [cljs.core.async.macros :refer [go]])
   (:import [goog.date.DateTime]))
@@ -57,15 +57,26 @@
                          second
                          goog.date.Date.)
           :header format-date
-          :ordering #(.valueOf (key %))
-          :sort-comparator >
+          :sort-value #(- (.valueOf %))
           :transaction-date-format time-only-format} 
    :merchant {:grouping (comp #(nth % 2) :merchant)
               :transaction-date-format date-time-format}
    :category {:grouping (comp snake-case-to-capitalised last :merchant)
               :transaction-date-format date-time-format}})
 
-(defn transactions-card-header [event-chan loading? selected-group]
+(def sorting-functions
+  {:default key
+   :total-spend #(->> (val %)
+                      (map :transaction)
+                      (remove declined?)
+                      (map (fn [[_ _ amount]] amount))
+                      (reduce + 0))
+   :count #(->> (val %)
+                (map :transaction)
+                count
+                -)})
+
+(defn transactions-card-header [event-chan loading? selected-group selected-sort sort-direction]
   [CardTitle {:class "home-card__header"}
    [:div.flex-padder]
    [:div.home-card__title
@@ -77,29 +88,47 @@
                     :name "refresh"
                     :on-click #(go (put! event-chan [:action/refresh-transactions]))}])]]
    [:div.home-card__controls
-    [:p "Group By"]
-    [:div.home-card__options
-     (map
-      (fn [[group icon]]
-        ^{:key group}
-        [IconButton {:name icon
-                     :class (when (= group selected-group) "mdl-button--raised")
-                     :on-click #(go (put! event-chan [:action/select-transaction-grouping group]))}])
-      {:date "event_note"
-       :merchant "local_convenience_store"
-       :category "format_list_numbered"})]]])
+    [:div.home-card__control
+     [:p "Group By"]
+     [:div.home-card__options
+      (map
+       (fn [[group icon]]
+         ^{:key group}
+         [IconButton {:name icon
+                      :class (when (= group selected-group) "mdl-button--raised")
+                      :on-click #(go (put! event-chan [:action/select-transaction-grouping group]))}])
+       {:date "event_note"
+        :merchant "local_convenience_store"
+        :category "format_list_numbered"})]]
+    [:div.home-card__control
+     [:p "Sort By"]
+     [:div.home-card__options
+      (map
+       (fn [[sort icon]]
+         ^{:key sort}
+         [IconButton {:name icon
+                      :class (when (= sort selected-sort) "mdl-button--raised")
+                      :on-click #(go (put! event-chan (if (= sort selected-sort)
+                                                        [:action/change-transaction-sort-direction]
+                                                        [:action/select-transaction-sorting sort])))}])
+       {:default "keyboard_arrow_down"
+        :total-spend "local_atm"
+        :count "shop_two"})]]]])
 
-(defn transactions-card-body [selected-group data]
-  (let [{:keys [grouping ordering sort-comparator transaction-date-format header]
+(defn transactions-card-body [selected-group selected-sort sort-direction data]
+  (let [{:keys [grouping ordering sort-value transaction-date-format header]
          :or {header str
-              sort-comparator compare
-              ordering identity}}
-        (selected-group grouping-functions)]
+              sort-value identity}}
+        (selected-group grouping-functions)
+        sort-fn (selected-sort sorting-functions)]
     [:div {:class "mdl-card__supporting-text"}
      (->> data
           (group-by grouping)
           (filter key)
-          (sort-by ordering sort-comparator)
+          (sort-by (fn [[group data]]
+                     (-> [(sort-value group) data]
+                         sort-fn))
+                   (if sort-direction < >))
           (map (fn [[group-key group-data]]
                  (let [group-transactions (map :transaction group-data)]
                    ^{:key group-key}
@@ -146,10 +175,10 @@
                                      [:span {:class "transaction__date"}
                                       (time-format/unparse transaction-date-format (goog.date.DateTime. created))]]]))))]]))))]))
 
-(defn transactions-card [event-chan loading? selected-group data]
+(defn transactions-card [event-chan loading? selected-group selected-sort sort-direction data]
   [Card {:class "home-card"}
-   [transactions-card-header event-chan loading? selected-group]
-   [transactions-card-body selected-group data]])
+   [transactions-card-header event-chan loading? selected-group selected-sort sort-direction]
+   [transactions-card-body selected-group selected-sort sort-direction data]])
 
 (defn home-page [app-db event-chan]
   (let [data (->> (q '[:find ?e ?created ?amount ?desc ?currency ?metadata ?decline-reason ?include ?m
@@ -171,9 +200,10 @@
                                         (-> (d/pull app-db '[:merchant/emoji :merchant/logo :merchant/name :merchant/address :merchant/category]
                                                    m-id)
                                             ((juxt :merchant/emoji :merchant/logo :merchant/name :merchant/address :merchant/category))))}))))
-        {loading? :transactions/loading selected-group :transactions/selected-group} (pull app-db '[:transactions/loading :transactions/selected-group] app-datom-id)]
+        {:keys [transactions/loading transactions/selected-group transactions/selected-sort :transactions/sort-direction]}
+        (pull app-db '[:transactions/loading :transactions/selected-group :transactions/selected-sort :transactions/sort-direction] app-datom-id)]
     (if (empty? data)
       
       [Spinner]
       
-      [transactions-card event-chan loading? selected-group data])))
+      [transactions-card event-chan loading selected-group selected-sort sort-direction data])))
