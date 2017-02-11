@@ -76,6 +76,18 @@
                 count
                 -)})
 
+(defn transactions-control [{:keys [label options active? on-option-clicked]}]
+  [:div.home-card__control
+     [:p label]
+     [:div.home-card__options
+      (map
+       (fn [[option icon]]
+         ^{:key option}
+         [IconButton {:name icon
+                      :class (when (active? option) "mdl-button--raised")
+                      :on-click (partial on-option-clicked option)}])
+       options)]])
+
 (defn transactions-card-header [event-chan loading? selected-group selected-sort sort-direction]
   [CardTitle {:class "home-card__header"}
    [:div.flex-padder]
@@ -88,32 +100,20 @@
                     :name "refresh"
                     :on-click #(go (put! event-chan [:action/refresh-transactions]))}])]]
    [:div.home-card__controls
-    [:div.home-card__control
-     [:p "Group By"]
-     [:div.home-card__options
-      (map
-       (fn [[group icon]]
-         ^{:key group}
-         [IconButton {:name icon
-                      :class (when (= group selected-group) "mdl-button--raised")
-                      :on-click #(go (put! event-chan [:action/select-transaction-grouping group]))}])
-       {:date "event_note"
-        :merchant "local_convenience_store"
-        :category "format_list_numbered"})]]
-    [:div.home-card__control
-     [:p "Sort By"]
-     [:div.home-card__options
-      (map
-       (fn [[sort icon]]
-         ^{:key sort}
-         [IconButton {:name icon
-                      :class (when (= sort selected-sort) "mdl-button--raised")
-                      :on-click #(go (put! event-chan (if (= sort selected-sort)
-                                                        [:action/change-transaction-sort-direction]
-                                                        [:action/select-transaction-sorting sort])))}])
-       {:default "keyboard_arrow_down"
-        :total-spend "local_atm"
-        :count "shop_two"})]]]])
+    [transactions-control {:label "Group"
+                           :options {:date "event_note"
+                                     :merchant "local_convenience_store"
+                                     :category "format_list_numbered"}
+                           :active? (partial = selected-group)
+                           :on-option-clicked #(go (put! event-chan [:action/select-transaction-grouping %]))}]
+    [transactions-control {:label "Sort"
+                           :options {:default "keyboard_arrow_down"
+                                     :total-spend "local_atm"
+                                     :count "shop_two"}
+                           :active? (partial = selected-sort)
+                           :on-option-clicked #(go (put! event-chan (if (= % selected-sort)
+                                                                      [:action/change-transaction-sort-direction]
+                                                                      [:action/select-transaction-sorting %])))}]]])
 
 (defn transactions-card-body [selected-group selected-sort sort-direction data]
   (let [{:keys [grouping ordering sort-value transaction-date-format header]
