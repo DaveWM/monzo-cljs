@@ -2,7 +2,8 @@
   (:require [datascript.core :refer [pull q]]
             [monzo-cljs.db :refer [app-datom-id]]
             [monzo-cljs.utilities :refer [format-amount]]
-            [cljs-time.core :as time :refer [year month day]]
+            [cljs-time.core :as time :refer [year month day months weeks minus]]
+            [cljs-time.coerce :refer [from-string]]
             [cljs-time.format :as time-format]
             [cljs-time.extend]
             [clojure.string :refer [blank? capitalize split join]]
@@ -88,7 +89,7 @@
                       :on-click (partial on-option-clicked option)}])
        options)]])
 
-(defn transactions-card-header [event-chan loading? selected-group selected-sort sort-direction]
+(defn transactions-card-header [event-chan loading? selected-group selected-sort sort-direction selected-limit]
   [CardTitle {:class "home-card__header"}
    [:div.flex-padder]
    [:div.home-card__title
@@ -113,16 +114,27 @@
                            :active? (partial = selected-sort)
                            :on-option-clicked #(go (put! event-chan (if (= % selected-sort)
                                                                       [:action/change-transaction-sort-direction]
-                                                                      [:action/select-transaction-sorting %])))}]]])
+                                                                      [:action/select-transaction-sorting %])))}]
+    [transactions-control {:label "Limit"
+                           :options {:week "view_week"
+                                     :month "event_note"
+                                     :all "all_inclusive"}
+                           :active? (partial = selected-limit)
+                           :on-option-clicked #(go (put! event-chan [:action/select-transaction-limit %]))}]]])
 
-(defn transactions-card-body [selected-group selected-sort sort-direction data]
+(defn transactions-card-body [selected-group selected-sort sort-direction selected-limit current-date data]
   (let [{:keys [grouping ordering sort-value transaction-date-format header]
          :or {header str
               sort-value identity}}
         (selected-group grouping-functions)
-        sort-fn (selected-sort sorting-functions)]
+        sort-fn (selected-sort sorting-functions)
+        limit-fn (condp = selected-limit
+                   :all (constantly true)
+                   :week (fn [{[_ created] :transaction}] (< (minus current-date (weeks 1)) created))
+                   :month (fn [{[_ created] :transaction}] (< (minus current-date (months 1)) created)))]
     [:div {:class "mdl-card__supporting-text"}
      (->> data
+          (filter limit-fn)
           (group-by grouping)
           (filter key)
           (sort-by (fn [[group data]]
@@ -175,10 +187,10 @@
                                      [:span {:class "transaction__date"}
                                       (time-format/unparse transaction-date-format (goog.date.DateTime. created))]]]))))]]))))]))
 
-(defn transactions-card [event-chan loading? selected-group selected-sort sort-direction data]
+(defn transactions-card [event-chan loading? selected-group selected-sort sort-direction selected-limit current-date data]
   [Card {:class "home-card"}
-   [transactions-card-header event-chan loading? selected-group selected-sort sort-direction]
-   [transactions-card-body selected-group selected-sort sort-direction data]])
+   [transactions-card-header event-chan loading? selected-group selected-sort sort-direction selected-limit]
+   [transactions-card-body selected-group selected-sort sort-direction selected-limit current-date data]])
 
 (defn home-page [app-db event-chan]
   (let [data (->> (q '[:find ?e ?created ?amount ?desc ?currency ?metadata ?decline-reason ?include ?m
@@ -200,10 +212,10 @@
                                         (-> (d/pull app-db '[:merchant/emoji :merchant/logo :merchant/name :merchant/address :merchant/category]
                                                    m-id)
                                             ((juxt :merchant/emoji :merchant/logo :merchant/name :merchant/address :merchant/category))))}))))
-        {:keys [transactions/loading transactions/selected-group transactions/selected-sort :transactions/sort-direction]}
-        (pull app-db '[:transactions/loading :transactions/selected-group :transactions/selected-sort :transactions/sort-direction] app-datom-id)]
+        {:keys [transactions/loading transactions/selected-group transactions/selected-sort :transactions/sort-direction :transactions/selected-limit :app/current-date]}
+        (pull app-db '[:transactions/loading :transactions/selected-group :transactions/selected-sort :transactions/sort-direction :transactions/selected-limit :app/current-date] app-datom-id)]
     (if (empty? data)
       
       [Spinner]
       
-      [transactions-card event-chan loading selected-group selected-sort sort-direction data])))
+      [transactions-card event-chan loading selected-group selected-sort sort-direction selected-limit (from-string current-date) data])))

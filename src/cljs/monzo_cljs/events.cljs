@@ -160,6 +160,9 @@
   (let [{:keys [transactions/sort-direction]} (d/pull db [:transactions/sort-direction] app-datom-id)]
     [[[:db/add app-datom-id :transactions/sort-direction (not sort-direction)]]]))
 
+(defmethod process-event :action/select-transaction-limit [[_ limit] db]
+  [[[:db/add app-datom-id :transactions/selected-limit limit]]])
+
 
 (defn start-event-loop [event-chan app-db dependencies]
   (go-loop []

@@ -81,7 +81,9 @@
                             :top "0px"
                             :height "100%"
                             :display "flex"
-                            :align-items "center"}]
+                            :align-items "center"}
+      (at-media mobile [:& {:align-items "flex-start"
+                            :padding-top "20px"}])]
      [:.home-card__controls {:display "flex"
                              :flex-direction "row"}]
      [:.home-card__control {:display "flex"
