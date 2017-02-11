@@ -20,12 +20,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Initialize App
-
-(defn dev-setup []
-  (when debug?
-    (enable-console-print!)
-    (println "dev mode")
-    ))
+(when debug?
+  (enable-console-print!)
+  (println "dev mode"))
 
 (if (aget js/navigator "serviceWorker")
   (-> js/navigator
@@ -55,7 +52,6 @@
 (add-watch app-db :save #(save-app-db @app-db))
 
 (defn main []
-  (dev-setup)
   (start-event-loop events-chan app-db dependencies)
   (start-router! events-chan)
   (reload))
