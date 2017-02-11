@@ -22,15 +22,31 @@
        (map #(vec [% (.getItem js/localStorage %)]))
        (into {})))
 
+(def version 1)
+(def initial-data {:app/title "Monzo Web"
+                   :transactions/selected-group :date
+                   :transactions/selected-sort :default
+                   :transactions/sort-direction true
+                   :transactions/selected-limit :month
+                   :transactions/loading false})
+
+(defn get-initial-transactions [data-map version]
+  (->> data-map
+       (merge {:db/version version})
+       (map (fn [[k v]] [:db/add app-datom-id k v]))
+       vec))
+
 (defn get-app-db []
-  (let [db (-> (if-let [serialized-state (-> (.getItem js/localStorage local-storage-key))]
-                 (reader/read-string serialized-state)
-                 (d/db-with (d/empty-db) [[:db/add app-datom-id :app/title "Monzo Web"]
-                                          [:db/add app-datom-id :transactions/selected-group :date]
-                                          [:db/add app-datom-id :transactions/selected-sort :default]
-                                          [:db/add app-datom-id :transactions/sort-direction true]
-                                          [:db/add app-datom-id :transactions/selected-limit :month]
-                                          [:db/add app-datom-id :transactions/loading false]]))
+  (let [saved-db (when-let [serialized-state (-> (.getItem js/localStorage local-storage-key))]
+                   (reader/read-string serialized-state))
+        saved-db-version (if saved-db
+                             (-> saved-db
+                                 (d/pull [:db/version] app-datom-id)
+                                 :db/version)
+                             -1)
+        db (-> (if (and saved-db (= saved-db-version version))
+                 saved-db
+                 (d/db-with (d/empty-db) (get-initial-transactions initial-data version)))
                d/conn-from-db)]
     (d/transact! db [[:db/add app-datom-id :app/current-date (to-string (now))]])
     db))
