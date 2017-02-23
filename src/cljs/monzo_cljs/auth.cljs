@@ -22,13 +22,21 @@
                                   :response_type "code"})
                    str))
 
+(def token-endpoint "https://monzo-proxy.herokuapp.com/oauth2/token")
+
 (defn check-token-valid [token http-get]
   "Checks whether the given token is still valid by pinging the /whoami endpoint on the monzo api. Returns a channel."
   (http-get "https://api.monzo.com/ping/whoami" {:headers {"Authorization" (str "Bearer " token)}}))
 
 (defn exchange-auth-code [code http-post]
-  (http-post "https://monzo-proxy.herokuapp.com/oauth2/token" {:form-params {:grant_type "authorization_code"
-                                                                             :client_id (:client-id credentials)
-                                                                             :redirect_uri redirect-url
-                                                                             :code code}
-                                                               :with-credentials? false}))
+  (http-post token-endpoint {:form-params {:grant_type "authorization_code"
+                                           :client_id (:client-id credentials)
+                                           :redirect_uri redirect-url
+                                           :code code}
+                             :with-credentials? false}))
+
+(defn refresh-access-code [refresh-token http-post]
+  (http-post token-endpoint {:form-params {:grant_type "refresh_token"
+                                           :client_id (:client-id credentials)
+                                           :refresh_token refresh-token}
+                             :with-credentials? false}))
