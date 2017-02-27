@@ -1,6 +1,7 @@
 (ns monzo-cljs.utilities
   (:require [monzo-cljs.currencies :refer [currencies]]
             [cljs.core.async :refer [chan pipeline]]
+            [clojure.string :refer [join capitalize split]]
             [goog.string :as gstring]
             [goog.string.format]))
 
@@ -42,3 +43,6 @@
     (->> (split s #"_")
          (map capitalize)
          (join " "))))
+
+(defn monzo-id-to-int [monzo-id]
+  (js/Math.abs (hash monzo-id)))

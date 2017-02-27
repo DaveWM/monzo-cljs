@@ -5,33 +5,9 @@
             [datascript.core :as d]
             [monzo-cljs.db :refer [app-datom-id]]
             [monzo-cljs.api :refer [get-accounts get-transactions get-balance]]
-            [clojure.string :refer [split]])
+            [clojure.string :refer [split]]
+            [monzo-cljs.utilities :refer [transduce-chan namespace-keys map-to-update convert-date-keys success? monzo-id-to-int]])
   (:require-macros [cljs.core.async.macros :refer [go-loop]]))
-
-(defn transduce-chan [from transducer]
-  (let [out (chan)]
-    (pipeline 1 out transducer from)
-    out))
-
-(defn namespace-keys [namespace m]
-  (->> m
-       (map (fn [[k v]]
-                [(keyword namespace (name k)) v]))
-       (into {})))
-
-(defn map-to-update [id m]
-  (->> m
-       (filter #(not (nil? (second %))))
-       (map (fn [[k v]]
-              [:db/add id k v]))))
-
-(defn convert-date-keys [keys m]
-  (reduce (fn [result k]
-            (update result k #(js/Date. %)))
-          m keys))
-
-(defn success? [response]
-  (>= 299 (:status response) 200))
 
 (defmulti process-event first)
 (defmethod process-event :default [] nil)
@@ -82,9 +58,6 @@
      (set! (.-href (.-location window))
            (get-route-url :routes/home))
      (chan))])
-
-(defn monzo-id-to-int [monzo-id]
-  (js/Math.abs (hash monzo-id)))
 
 (defmethod process-event :api/accounts-retrieved [[_ accounts] db]
   [(->> accounts
