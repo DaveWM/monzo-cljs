@@ -8,13 +8,6 @@
 (def app-datom-id 1)
 (def local-storage-key "state")
 
-(defn get-url-params []
-  (-> js/window
-      .-location
-      .-href
-      url
-      :query))
-
 (defn get-local-storage []
   (->> (.-length js/localStorage)
        (range)
@@ -51,5 +44,5 @@
     (d/transact! db [[:db/add app-datom-id :app/current-date (to-string (now))]])
     db))
 
-(defn save-app-db [db]
-  (.setItem js/localStorage local-storage-key (pr-str db)))
+(defn save-app-db [db local-storage]
+  (.setItem local-storage local-storage-key (pr-str db)))

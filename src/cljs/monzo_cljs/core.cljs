@@ -49,7 +49,7 @@
                   (.getElementById js/document "app")))
 
 (add-watch app-db :render #(reset! r-app-db @app-db))
-(add-watch app-db :save #(save-app-db @app-db))
+(add-watch app-db :save #(save-app-db @app-db (:local-storage dependencies)))
 
 (defn main []
   (start-event-loop events-chan app-db dependencies)

@@ -44,9 +44,9 @@
             "-")]]]])
 
 (defn root-component [conn event-chan]
-  (let [{title :app/title route :routes/current selected-account :app/selected-account}
+  (let [{:keys [app/title app/selected-account] route :routes/current}
         (pull conn '[:app/title :routes/current :app/selected-account] app-datom-id)
-        {balance :balance/balance currency :balance/currency spent-today :balance/spend_today username :account/description}
+        {:keys [balance/currency balance/balance] spent-today :balance/spend_today username :account/description}
         (when selected-account
           (pull conn '[:balance/balance :balance/currency :balance/spend_today :account/description] selected-account))
         page (get route-component-map route)]
