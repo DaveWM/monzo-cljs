@@ -1,7 +1,7 @@
 (ns monzo-cljs.home-page
   (:require [datascript.core :refer [pull q]]
             [monzo-cljs.db :refer [app-datom-id]]
-            [monzo-cljs.utilities :refer [format-amount]]
+            [monzo-cljs.utilities :refer [format-amount snake-case-to-capitalised]]
             [cljs-time.core :as time :refer [year month day months weeks minus]]
             [cljs-time.coerce :refer [from-string]]
             [cljs-time.format :as time-format]
@@ -30,18 +30,6 @@
 
 (defn declined? [{reason :transaction/decline_reason}]
   (boolean reason))
-
-(defn sum-transactions [transactions]
-  (reduce (fn [sum {:keys [transaction/amount] :as t}]
-            (+ sum (when (not (declined? t)) amount)))
-          0
-          transactions))
-
-(defn snake-case-to-capitalised [s]
-  (when s
-    (->> (split s #"_")
-         (map capitalize)
-         (join " "))))
 
 (defn get-transactions-currency [transactions]
   "returns the common currency for a list of transactions, or nil if the transactions are in different currencies"
@@ -146,7 +134,10 @@
                  ^{:key group-key}
                  [:div {:class "group"}
                   [:h4 {:class "group__header"} (header group-key)]
-                  (let [sum (sum-transactions transactions-data)
+                  (let [sum (->> transactions-data
+                                 (filter (complement declined?))
+                                 (map :transaction/amount)
+                                 (reduce + 0))
                         currency (get-transactions-currency transactions-data)]
                     (when currency
                       [:h5 {:class (str "group__sub-header "
