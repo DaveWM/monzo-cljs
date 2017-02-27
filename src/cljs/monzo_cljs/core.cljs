@@ -1,7 +1,7 @@
 (ns monzo-cljs.core
   (:require
    [reagent.core :as reagent]
-   [monzo-cljs.root-component :refer [root-component]]
+   [monzo-cljs.components.root-component :refer [root-component]]
    [monzo-cljs.db :refer [get-app-db save-app-db app-datom-id]]
    [cemerick.url :refer [url]]
    [monzo-cljs.routing :refer [start-router!]]

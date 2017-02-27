@@ -1,6 +1,6 @@
-(ns monzo-cljs.root-component
+(ns monzo-cljs.components.root-component
   (:require [monzo-cljs.db :refer [app-datom-id]]
-            [monzo-cljs.home-page :refer [home-page]]
+            [monzo-cljs.components.home-page :refer [home-page]]
             [monzo-cljs.utilities :refer [format-amount]]
             [datascript.core :refer [pull]]
             [clojure.string :as str]

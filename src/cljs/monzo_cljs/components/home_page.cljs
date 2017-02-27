@@ -1,4 +1,4 @@
-(ns monzo-cljs.home-page
+(ns monzo-cljs.components.home-page
   (:require [datascript.core :refer [pull q]]
             [monzo-cljs.db :refer [app-datom-id]]
             [monzo-cljs.utilities :refer [format-amount snake-case-to-capitalised]]
