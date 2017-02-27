@@ -28,14 +28,14 @@
 (defn format-time [date]
   (time-format/unparse time-only-format date))
 
-(defn declined? [[_ _ _ _ _ _ decline-reason]]
-  (boolean decline-reason))
+(defn declined? [{reason :transaction/decline_reason}]
+  (boolean reason))
 
 (defn sum-transactions [transactions]
-  (->> transactions
-       (reduce (fn [sum [_ _ amount :as t]]
-                 (+ sum (when (not (declined? t)) amount)))
-               0)))
+  (reduce (fn [sum {:keys [transaction/amount] :as t}]
+            (+ sum (when (not (declined? t)) amount)))
+          0
+          transactions))
 
 (defn snake-case-to-capitalised [s]
   (when s
@@ -46,7 +46,7 @@
 (defn get-transactions-currency [transactions]
   "returns the common currency for a list of transactions, or nil if the transactions are in different currencies"
   (let [currencies (->> transactions
-                        (map #(nth % 4))
+                        (map :transaction/currency)
                         (into #{}))]
     (when (= 1 (count currencies))
       (first currencies))))
@@ -54,26 +54,24 @@
 
 (def grouping-functions
   {:date {:grouping #(-> %
-                         :transaction
-                         second
+                         :transaction/created
                          goog.date.Date.)
           :header format-date
           :sort-value #(- (.valueOf %))
           :transaction-date-format time-only-format} 
-   :merchant {:grouping (comp #(nth % 2) :merchant)
+   :merchant {:grouping #(get-in % [:transaction/merchant-id :merchant/name])
               :transaction-date-format date-time-format}
-   :category {:grouping (comp snake-case-to-capitalised last :merchant)
+   :category {:grouping #(->> (get-in % [:transaction/merchant-id :merchant/category])
+                              snake-case-to-capitalised)
               :transaction-date-format date-time-format}})
 
 (def sorting-functions
   {:default key
    :total-spend #(->> (val %)
-                      (map :transaction)
                       (remove declined?)
-                      (map (fn [[_ _ amount]] amount))
+                      (map :transaction/amount)
                       (reduce + 0))
    :count #(->> (val %)
-                (map :transaction)
                 count
                 -)})
 
@@ -89,13 +87,13 @@
                       :on-click (partial on-option-clicked option)}])
        options)]])
 
-(defn transactions-card-header [event-chan loading? selected-group selected-sort sort-direction selected-limit]
+(defn transactions-card-header [event-chan {:keys [transactions/loading transactions/selected-group transactions/selected-sort transactions/sort-direction transactions/selected-limit]}]
   [CardTitle {:class "home-card__header"}
    [:div.flex-padder]
    [:div.home-card__title
     [:h2 {:class "mdl-card__title-text"} "Transactions"]
     [:span {:class "home-card__refresh"}
-     (if loading?
+     (if loading
        [Spinner]
        [IconButton {:class "home-card__refresh-button"
                     :name "refresh"
@@ -122,16 +120,19 @@
                            :active? (partial = selected-limit)
                            :on-option-clicked #(go (put! event-chan [:action/select-transaction-limit %]))}]]])
 
-(defn transactions-card-body [selected-group selected-sort sort-direction selected-limit current-date data]
-  (let [{:keys [grouping ordering sort-value transaction-date-format header]
+(defn transactions-card-body [{:keys [transactions/selected-group transactions/selected-sort transactions/sort-direction transactions/selected-limit] :as app-data} data]
+  (let [current-date (-> app-data
+                         :app/current-date
+                         from-string)
+        {:keys [grouping ordering sort-value transaction-date-format header]
          :or {header str
               sort-value identity}}
         (selected-group grouping-functions)
         sort-fn (selected-sort sorting-functions)
         limit-fn (condp = selected-limit
                    :all (constantly true)
-                   :week (fn [{[_ created] :transaction}] (< (minus current-date (weeks 1)) created))
-                   :month (fn [{[_ created] :transaction}] (< (minus current-date (months 1)) created)))]
+                   :week (fn [{created :transaction/created}] (< (minus current-date (weeks 1)) created))
+                   :month (fn [{created :transaction/created}] (< (minus current-date (months 1)) created)))]
     [:div {:class "mdl-card__supporting-text"}
      (->> data
           (filter limit-fn)
@@ -141,81 +142,63 @@
                      (-> [(sort-value group) data]
                          sort-fn))
                    (if sort-direction < >))
-          (map (fn [[group-key group-data]]
-                 (let [group-transactions (map :transaction group-data)]
-                   ^{:key group-key}
-                   [:div {:class "group"}
-                    [:h4 {:class "group__header"} (header group-key)]
-                    (let [sum (sum-transactions group-transactions)
-                          currency (get-transactions-currency group-transactions)]
-                      (when currency
-                        [:h5 {:class (str "group__sub-header "
-                                          (if (pos? sum)
-                                            "group__sub-header--positive"
-                                            "group__sub-header--negative"))}
-                         (str " " (format-amount currency sum))]))
-                    [List
-                     (->> group-data
-                          (sort-by (comp second :transaction) >)
-                          (map (fn [{[id created amount desc currency {notes :notes} decline-reason included? :as transaction] :transaction
-                                     [icon logo merchant address] :merchant}]
-                                 (let [is-credit (pos? amount)
-                                       declined (declined? transaction)]
-                                   ^{:key id}
-                                   [ListItem {:class (str "transaction "
-                                                          (if is-credit "transaction--credit" "transaction--debit"))}
+          (map (fn [[group-key transactions-data]]
+                 ^{:key group-key}
+                 [:div {:class "group"}
+                  [:h4 {:class "group__header"} (header group-key)]
+                  (let [sum (sum-transactions transactions-data)
+                        currency (get-transactions-currency transactions-data)]
+                    (when currency
+                      [:h5 {:class (str "group__sub-header "
+                                        (if (pos? sum)
+                                          "group__sub-header--positive"
+                                          "group__sub-header--negative"))}
+                       (str " " (format-amount currency sum))]))
+                  [List
+                   (->> transactions-data
+                        (sort-by :transaction/created >)
+                        (map (fn [{:keys [db/id transaction/created transaction/amount transaction/description transaction/currency transaction/notes] decline-reason :transaction/decline_reason included? :transaction/included_in_spending merchant :transaction/merchant-id :as transaction}]
+                               (let [is-credit (pos? amount)
+                                     declined (declined? transaction)]
+                                 ^{:key id}
+                                 [ListItem {:class (str "transaction "
+                                                        (if is-credit "transaction--credit" "transaction--debit"))}
+                                  (let [{logo :merchant/logo icon :merchant/emoji} merchant]
                                     (if (not (blank? logo))
                                       [:img {:class "mdl-list__item-icon transaction__icon"
                                              :src logo}]
                                       [:span {:class "mdl-list__item-icon transaction__icon"}
-                                       (or icon "💰")])
-                                    [:span {:class "mdl-list__item-primary-content transaction__text"}
-                                     [:span {:class (str "transaction__amount "
+                                       (or icon "💰")]))
+                                  [:span {:class "mdl-list__item-primary-content transaction__text"}
+                                   [:span {:class (str "transaction__amount "
+                                                       (when declined
+                                                         "transaction__amount--not-included"))}
+                                    (format-amount currency (js/Math.abs amount))]
+                                   [:span {:class "transaction__description-lines"}
+                                    [:span {:class "transaction__description-primary"}
+                                     (or (:merchant/name merchant) description)]
+                                    [:span {:class  (str "transaction__description-secondary "
                                                          (when declined
-                                                           "transaction__amount--not-included"))}
-                                      (format-amount currency (js/Math.abs amount))]
-                                     [:span {:class "transaction__description-lines"}
-                                      [:span {:class "transaction__description-primary"}
-                                       (or merchant desc)]
-                                      (let [addr (:short_formatted address)]
-                                        [:span {:class  (str "transaction__description-secondary "
-                                                             (when declined
-                                                               "transaction__description-secondary--warning"))}
-                                         (or (get decline-reasons decline-reason)
-                                             notes
-                                             addr)])]
-                                     [:span {:class "transaction__date"}
-                                      (time-format/unparse transaction-date-format (goog.date.DateTime. created))]]]))))]]))))]))
+                                                           "transaction__description-secondary--warning"))}
+                                     (or (get decline-reasons decline-reason)
+                                         notes
+                                         (get-in merchant [:merchant/address :short_formatted]))]]
+                                   [:span {:class "transaction__date"}
+                                    (time-format/unparse transaction-date-format (goog.date.DateTime. created))]]]))))]])))]))
 
-(defn transactions-card [event-chan loading? selected-group selected-sort sort-direction selected-limit current-date data]
+(defn transactions-card [event-chan app-data transactions-data]
   [Card {:class "home-card"}
-   [transactions-card-header event-chan loading? selected-group selected-sort sort-direction selected-limit]
-   [transactions-card-body selected-group selected-sort sort-direction selected-limit current-date data]])
+   [transactions-card-header event-chan app-data]
+   [transactions-card-body app-data transactions-data]])
 
 (defn home-page [app-db event-chan]
-  (let [data (->> (q '[:find ?e ?created ?amount ?desc ?currency ?metadata ?decline-reason ?include ?m
-                       :in $
-                       :where
-                       [?e :transaction/description ?desc]
-                       [?e :transaction/amount ?amount]
-                       [?e :transaction/currency ?currency]
-                       [?e :transaction/created ?created]
-                       [?e :transaction/metadata ?metadata]
-                       [(get-else $ ?e :transaction/decline_reason false) ?decline-reason]
-                       [?e :transaction/include_in_spending ?include]
-                       [(get-else $ ?e :transaction/merchant-id false) ?m]]
-                     app-db)
-                  (map (fn [transaction]
-                         (let [m-id (last transaction)]
-                           {:transaction transaction
-                            :merchant (when m-id
-                                        (-> (d/pull app-db '[:merchant/emoji :merchant/logo :merchant/name :merchant/address :merchant/category]
-                                                   m-id)
-                                            ((juxt :merchant/emoji :merchant/logo :merchant/name :merchant/address :merchant/category))))}))))
-        {:keys [transactions/loading transactions/selected-group transactions/selected-sort :transactions/sort-direction :transactions/selected-limit :app/current-date]}
-        (pull app-db '[:transactions/loading :transactions/selected-group :transactions/selected-sort :transactions/sort-direction :transactions/selected-limit :app/current-date] app-datom-id)]
-    (if (empty? data)
+  (let [transaction-data (q '[:find [(pull ?e [:db/id :transaction/description :transaction/amount :transaction/currency :transaction/created :transaction/metadata :transaction/decline_reason :transaction/include_in_spending :transaction/merchant-id {:transaction/merchant-id [:merchant/emoji :merchant/logo :merchant/name :merchant/address :merchant/category]}]) ...]
+                    :in $
+                    :where [?e :transaction/id]]
+                  app-db)
+        app-data (d/pull app-db ["*"] app-datom-id)]
+    (if (empty? transaction-data)
       
       [Spinner]
       
-      [transactions-card event-chan loading selected-group selected-sort sort-direction selected-limit (from-string current-date) data])))
+      [transactions-card event-chan app-data transaction-data])))
