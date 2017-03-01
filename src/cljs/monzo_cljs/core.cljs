@@ -1,16 +1,14 @@
 (ns monzo-cljs.core
-  (:require
-   [reagent.core :as reagent]
-   [monzo-cljs.components.root-component :refer [root-component]]
-   [monzo-cljs.db :refer [get-app-db save-app-db app-datom-id]]
-   [cemerick.url :refer [url]]
-   [monzo-cljs.routing :refer [start-router!]]
-   [monzo-cljs.events :refer [start-event-loop]]
-   [cljs.core.async :refer [chan put!]]
-   [datascript.core :as d]
-   [cljs-http.client :as http])
-  (:require-macros [cljs.core.async.macros :refer [go]]))
-
+  (:require [cljs-http.client :as http]
+            [cljs.core.async :refer [chan]]
+            [monzo-cljs.components.root-component :refer [root-component]]
+            [monzo-cljs.db :refer [get-app-db save-app-db]]
+            [monzo-cljs.events.core :refer [start-event-loop]]
+            [monzo-cljs.routing :refer [start-router!]]
+            [monzo-cljs.events.auth]
+            [monzo-cljs.events.home-page]
+            [monzo-cljs.events.routes]
+            [reagent.core :as reagent]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Vars
