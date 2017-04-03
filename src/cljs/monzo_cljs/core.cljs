@@ -1,6 +1,6 @@
 (ns monzo-cljs.core
   (:require [cljs-http.client :as http]
-            [cljs.core.async :refer [chan]]
+            [cljs.core.async :refer [chan mult tap]]
             [monzo-cljs.components.root-component :refer [root-component]]
             [monzo-cljs.db :refer [get-app-db save-app-db]]
             [monzo-cljs.events.core :refer [actions->transactions!]]
@@ -8,7 +8,7 @@
             [monzo-cljs.events.auth]
             [monzo-cljs.events.home-page]
             [monzo-cljs.events.routes]
-            [monzo-cljs.utilities :refer [subscribe! clone-chan]]
+            [monzo-cljs.utilities :refer [subscribe!]]
             [reagent.core :as reagent]
             [datascript.core :as d]))
 
@@ -39,6 +39,13 @@
                    :http-post http/post
                    :local-storage js/localStorage})
 
+(def non-saved-actions
+  #{:action/refresh-transactions
+    :action/select-transaction-grouping
+    :action/select-transaction-sorting
+    :action/change-transaction-sort-direction
+    :action/select-transaction-limit})
+
 (defn container [child]
   (let [db @r-app-db]
     [child db events-chan]))
@@ -48,12 +55,15 @@
                   (.getElementById js/document "app")))
 
 (add-watch app-db :render #(reset! r-app-db @app-db))
-(add-watch app-db :save #(save-app-db @app-db (:local-storage dependencies)))
 
 (defn main []
-  (let [transactions-chan (actions->transactions! events-chan app-db dependencies)]
-    (do (subscribe! (clone-chan transactions-chan)
-                    (fn [[evt transaction]] (d/transact! app-db transaction)))))
+  (let [transactions-mult (mult (actions->transactions! events-chan app-db dependencies))]
+    (do (subscribe! (tap transactions-mult (chan))
+                    (fn [[evt transaction]] (d/transact! app-db transaction)))
+        (subscribe! (tap transactions-mult (chan))
+                    (fn [[[evt]]]
+                      (when-not (non-saved-actions evt)
+                        (save-app-db @app-db (:local-storage dependencies)))))))
   (start-router! events-chan)
   (reload))
 

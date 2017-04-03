@@ -1,6 +1,6 @@
 (ns monzo-cljs.utilities
   (:require [monzo-cljs.currencies :refer [currencies]]
-            [cljs.core.async :refer [chan pipeline <! put! pipe]]
+            [cljs.core.async :refer [chan pipeline <! put! pipe tap mult]]
             [clojure.string :refer [join capitalize split]]
             [goog.string :as gstring]
             [goog.string.format])
@@ -25,11 +25,6 @@
     (let [msg (<! ch)]
       (subscription! msg))
     (recur)))
-
-(defn clone-chan [ch]
-  (let [out-chan (chan)]
-    (pipe ch out-chan)
-    out-chan))
 
 (defn namespace-keys [namespace m]
   (->> m
