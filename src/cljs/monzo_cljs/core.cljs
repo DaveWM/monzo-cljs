@@ -3,12 +3,14 @@
             [cljs.core.async :refer [chan]]
             [monzo-cljs.components.root-component :refer [root-component]]
             [monzo-cljs.db :refer [get-app-db save-app-db]]
-            [monzo-cljs.events.core :refer [start-event-loop]]
+            [monzo-cljs.events.core :refer [actions->transactions!]]
             [monzo-cljs.routing :refer [start-router!]]
             [monzo-cljs.events.auth]
             [monzo-cljs.events.home-page]
             [monzo-cljs.events.routes]
-            [reagent.core :as reagent]))
+            [monzo-cljs.utilities :refer [subscribe! clone-chan]]
+            [reagent.core :as reagent]
+            [datascript.core :as d]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Vars
@@ -49,7 +51,9 @@
 (add-watch app-db :save #(save-app-db @app-db (:local-storage dependencies)))
 
 (defn main []
-  (start-event-loop events-chan app-db dependencies)
+  (let [transactions-chan (actions->transactions! events-chan app-db dependencies)]
+    (do (subscribe! (clone-chan transactions-chan)
+                    (fn [[evt transaction]] (d/transact! app-db transaction)))))
   (start-router! events-chan)
   (reload))
 

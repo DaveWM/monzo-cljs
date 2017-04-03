@@ -1,9 +1,10 @@
 (ns monzo-cljs.utilities
   (:require [monzo-cljs.currencies :refer [currencies]]
-            [cljs.core.async :refer [chan pipeline]]
+            [cljs.core.async :refer [chan pipeline <! put! pipe]]
             [clojure.string :refer [join capitalize split]]
             [goog.string :as gstring]
-            [goog.string.format]))
+            [goog.string.format])
+  (:require-macros [cljs.core.async.macros :refer [go-loop]]))
 
 (defn format-amount [currency amount]
   (let [symbol (-> (keyword currency)
@@ -17,6 +18,18 @@
   (let [out (chan)]
     (pipeline 1 out transducer from)
     out))
+
+(defn subscribe! [ch subscription!]
+  "calls a functions (presumably with side effects) on every message of the given channel"
+  (go-loop []
+    (let [msg (<! ch)]
+      (subscription! msg))
+    (recur)))
+
+(defn clone-chan [ch]
+  (let [out-chan (chan)]
+    (pipe ch out-chan)
+    out-chan))
 
 (defn namespace-keys [namespace m]
   (->> m
