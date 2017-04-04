@@ -3,7 +3,7 @@
             [monzo-cljs.db :refer [app-datom-id]]
             [monzo-cljs.utilities :refer [format-amount snake-case-to-capitalised]]
             [cljs-time.core :as time :refer [year month day months weeks minus]]
-            [cljs-time.coerce :refer [from-string]]
+            [cljs-time.coerce :refer [from-string from-long]]
             [cljs-time.format :as time-format]
             [cljs-time.extend]
             [clojure.string :refer [blank? capitalize split join]]
@@ -108,22 +108,14 @@
                            :active? (partial = selected-limit)
                            :on-option-clicked #(go (put! event-chan [:action/select-transaction-limit %]))}]]])
 
-(defn transactions-card-body [{:keys [transactions/selected-group transactions/selected-sort transactions/sort-direction transactions/selected-limit] :as app-data} data]
-  (let [current-date (-> app-data
-                         :app/current-date
-                         from-string)
-        {:keys [grouping ordering sort-value transaction-date-format header]
+(defn transactions-card-body [{:keys [transactions/selected-group transactions/selected-sort transactions/sort-direction] :as app-data} data]
+  (let [{:keys [grouping ordering sort-value transaction-date-format header]
          :or {header str
               sort-value identity}}
         (selected-group grouping-functions)
-        sort-fn (selected-sort sorting-functions)
-        limit-fn (condp = selected-limit
-                   :all (constantly true)
-                   :week (fn [{created :transaction/created}] (< (minus current-date (weeks 1)) created))
-                   :month (fn [{created :transaction/created}] (< (minus current-date (months 1)) created)))]
+        sort-fn (selected-sort sorting-functions)]
     [:div {:class "mdl-card__supporting-text"}
      (->> data
-          (filter limit-fn)
           (group-by grouping)
           (filter key)
           (sort-by (fn [[group data]]
@@ -183,11 +175,20 @@
    [transactions-card-body app-data transactions-data]])
 
 (defn home-page [app-db event-chan]
-  (let [transaction-data (q '[:find [(pull ?e [:db/id :transaction/description :transaction/amount :transaction/currency :transaction/created :transaction/metadata :transaction/decline_reason :transaction/include_in_spending :transaction/merchant-id {:transaction/merchant-id [:merchant/emoji :merchant/logo :merchant/name :merchant/address :merchant/category]}]) ...]
-                    :in $
-                    :where [?e :transaction/id]]
-                  app-db)
-        app-data (d/pull app-db ["*"] app-datom-id)]
+  (let [app-data (d/pull app-db ["*"] app-datom-id)
+        current-date (-> app-data
+                         :app/current-date
+                         from-string)
+        from-date (condp = (:transactions/selected-limit app-data)
+                    :all (from-long 1)
+                    :week (minus current-date (weeks 1))
+                    :month (minus current-date (months 1)))
+        transaction-data (q '[:find [(pull ?e [:db/id :transaction/description :transaction/amount :transaction/currency :transaction/created :transaction/metadata :transaction/decline_reason :transaction/include_in_spending :transaction/merchant-id {:transaction/merchant-id [:merchant/emoji :merchant/logo :merchant/name :merchant/address :merchant/category]}]) ...]
+                              :in $ ?date
+                              :where [?e :transaction/id]
+                                     [?e :transaction/created ?created]
+                                     [(> ?created ?date)]]
+                            app-db from-date)]
     (if (empty? transaction-data)
       
       [Spinner]
