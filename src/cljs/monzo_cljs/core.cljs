@@ -3,7 +3,8 @@
             [cljs.core.async :refer [chan mult tap]]
             [monzo-cljs.components.root-component :refer [root-component]]
             [monzo-cljs.db :refer [get-app-db save-app-db]]
-            [monzo-cljs.events.core :refer [actions->transactions!]]
+            [larch.core :refer [msgs->updates!]]
+            [monzo-cljs.events.core :refer [process-event]]
             [monzo-cljs.routing :refer [start-router!]]
             [monzo-cljs.events.auth]
             [monzo-cljs.events.home-page]
@@ -57,7 +58,7 @@
 (add-watch app-db :render #(reset! r-app-db @app-db))
 
 (defn main []
-  (let [transactions-mult (mult (actions->transactions! events-chan app-db dependencies))]
+  (let [transactions-mult (mult (msgs->updates! events-chan app-db dependencies process-event))]
     (do (subscribe! (tap transactions-mult (chan))
                     (fn [[evt transaction]] (d/transact! app-db transaction)))
         (subscribe! (tap transactions-mult (chan))
